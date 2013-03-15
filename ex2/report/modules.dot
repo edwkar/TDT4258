@@ -1,0 +1,29 @@
+digraph modules {
+    size="16,16";
+
+    main [shape=box, style="filled"];
+    leds [shape=box, style="filled"];
+    switches [shape=box, style="filled"];
+    dac [shape=box, style="filled"];
+    melodies [shape=box];
+    synthesizer [shape=box];
+    controller [shape=box];
+    utils [shape=box, style="filled"];
+
+    main -> leds;
+    main -> switches;
+    main -> dac;
+    main -> melodies;
+    main -> synthesizer;
+    main -> controller;
+
+    leds -> utils;
+    switches -> utils;
+    dac -> utils;
+    melodies -> utils;
+    synthesizer -> utils;
+    controller -> utils;
+
+    controller -> synthesizer;
+    melodies -> synthesizer;
+};

@@ -1,0 +1,31 @@
+digraph dac_state_machine {
+    node [shape=point ]; 
+    input;
+
+    node [shape=box, style=filled, color=yellow];
+    has_front_buf [label="Has front buf?"];
+    front_buf_exhausted [label="Front buf exhausted?"];
+    has_back_buf [label="Has back buf?"];
+
+    node [shape=box, style=filled, color=grey];
+    read_sample [label="Read sample from front buf"];
+    read_null_sample [label="Read null sample"];
+    write_to_dac [label="Write to DAC"];
+    switch_buffers [label="Switch buffers"];
+    wait_interrupt [label="Wait for interrupt"];
+
+    input -> has_front_buf [label="Initial interrupt"];
+
+    has_front_buf -> read_sample [label="YES"];
+    has_front_buf -> read_null_sample [label="NO"];
+    read_sample -> write_to_dac;
+    read_null_sample -> write_to_dac;
+    write_to_dac -> front_buf_exhausted;
+    front_buf_exhausted -> has_back_buf [label="YES"];
+    front_buf_exhausted -> wait_interrupt [label="NO"];
+    has_back_buf -> switch_buffers [label="YES"];
+    has_back_buf -> wait_interrupt [label="NO"];
+    switch_buffers -> wait_interrupt;
+
+    wait_interrupt -> has_front_buf [label="Interrupt"];
+};

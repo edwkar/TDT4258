@@ -1,0 +1,26 @@
+digraph main_logic {
+    node [shape=point ]; 
+    input;
+
+    node [shape=box, style=filled, color=yellow];
+    may_write_dac [label="May write to DAC?"];
+
+    node [shape=box, style=filled, color=gray];
+    initialize_subsystems [label="Initialise subsystems."];
+    setup_controller [label="Setup music controller."];
+    enable_interrupts [label="Enable interrupts."];
+    advance_controller [label="Advance music controller."];
+    write [label="Write to DAC."];
+    update_leds [label="Update LEDs."];
+    
+    input -> initialize_subsystems;
+    initialize_subsystems -> setup_controller;
+    setup_controller -> enable_interrupts;
+    enable_interrupts -> advance_controller;
+
+    advance_controller -> may_write_dac;
+    may_write_dac -> write [label = "YES"];
+    may_write_dac -> may_write_dac [label = "NO"];
+    write -> update_leds;
+    update_leds -> advance_controller;
+};
