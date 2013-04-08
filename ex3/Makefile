@@ -1,3 +1,5 @@
+# vim: set ts=8:
+
 SH = /bin/bash
 
 HOSTCC = gcc
@@ -7,20 +9,20 @@ CROSSLD = avr32-linux-ld
 
 
 CFLAGS = -Iscorched -Ishared -O2 -g -std=gnu99 \
-		 -Wall -Wextra -Winline -Werror \
-		 -DSC_RESOURCES_PATH='"scorched/resources/"'
+	 -Wall -Wextra -Winline -Werror \
+         -DSC_RESOURCES_PATH='"scorched/resources/"'
 LDFLAGS = -g -lm -lpthread
 
 
 HOSTCFLAGS = $(CFLAGS) -DHOST_BUILD\
-			           -DDSP_PATH=$(MOCK_DSP_PATH) \
-			           -DFRAME_BUFFER_PATH=$(MOCK_FRAME_BUFFER_PATH)\
-			           -DINPUT_DRIVER_PATH=$(MOCK_INPUT_DRIVER_PATH)
+		       -DDSP_PATH=$(MOCK_DSP_PATH) \
+		       -DFRAME_BUFFER_PATH=$(MOCK_FRAME_BUFFER_PATH)\
+		       -DINPUT_DRIVER_PATH=$(MOCK_INPUT_DRIVER_PATH)
 HOSTLDFLAGS = $(LDFLAGS) -lSDL
 
 CROSSCFLAGS = $(CFLAGS) -DDSP_PATH='"/dev/dsp"'\
-			            -DFRAME_BUFFER_PATH='"/dev/fb0"'\
-						-DINPUT_DRIVER_PATH='"/dev/stk1000switches"'
+	                -DFRAME_BUFFER_PATH='"/dev/fb0"'\
+			-DINPUT_DRIVER_PATH='"/dev/stk1000switches"'
 CROSSLDFLAGS = $(LDFLAGS)
 
 
@@ -54,8 +56,9 @@ $(SCORCHED): $(SCORCHED_HDRS) $(SCORCHED_OBJS) $(SHARED_HDRS) $(SHARED_OBJS)
 	$(CROSSCC) $(SCORCHED_OBJS) $(SHARED_OBJS) $(CROSSLDFLAGS) -o $@
 
 $(SCORCHED_HOST): $(SCORCHED_HDRS) $(SCORCHED_OBJS_HOST) \
-	              $(SHARED_HDRS) $(SHARED_OBJS_HOST)
-	$(HOSTCC) $(SCORCHED_OBJS_HOST) $(SHARED_OBJS_HOST) $(HOSTLDFLAGS) -o $@
+	          $(SHARED_HDRS) $(SHARED_OBJS_HOST)
+	$(HOSTCC) $(SCORCHED_OBJS_HOST) $(SHARED_OBJS_HOST) \
+	          $(HOSTLDFLAGS) -o $@
 
 $(MOCKENV): $(MOCKENV_HDRS) $(MOCKENV_OBJS)
 	$(HOSTCC) $(MOCKENV_OBJS) $(HOSTLDFLAGS) -o $@
@@ -76,7 +79,7 @@ driver:
 .PHONY: host-sc-test
 host-sc-test: all 
 	./$(MOCKENV) "valgrind --leak-check=full \
-		                   --track-fds=yes ./$(SCORCHED_HOST)"
+		               --track-fds=yes ./$(SCORCHED_HOST)"
 
 
 .PHONY: clean
