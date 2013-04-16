@@ -17,7 +17,7 @@
 #define MIN(a, b)      ((a)<(b) ? (a) : (b))
 #define CLAMP(a, x, b) ((x) > (b) ? (b) : (x) < (a) ? (a) : (x))
 
-#define ALWAYS_INLINE(fn) inline fn __attribute__((always_inline)) 
+#define ALWAYS_INLINE(fn) inline __attribute__((always_inline)) fn
 
 #define M_PI_F ((float) M_PI)
 
