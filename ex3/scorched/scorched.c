@@ -20,21 +20,27 @@
 #define LEFT_TANK_START_X 40
 #define RIGHT_TANK_START_X (WORLD_WIDTH - 40 - 40)
 
-static struct rate_keeper rt_keeper;
+
+static struct rate_keeper rk;
+
+/* Game objects.
+ */
+static GameObject *GAME_OBJS[32];
+static unsigned int num_game_objs = 0;
 
 static Terrain *terrain = NULL;
 static Tank *left_tank = NULL;
 static Tank *right_tank = NULL;
 static Projectile *projectile = NULL;
 static bool left_tank_is_active = false;
-
 static Text *text = NULL;
 
+
+/* "Score table".
+ */
 static unsigned int num_wins_left = 0;
 static unsigned int num_wins_right = 0;
 
-static GameObject *GAME_OBJS[32];
-static unsigned int num_game_objs = 0;
 
 
 struct state {
@@ -48,8 +54,12 @@ struct state state_player_act(uint32_t time_in_state);
 struct state state_projectile_move(uint32_t time_in_state);
 struct state state_projectile_explode(uint32_t time_in_state);
 
+
 struct state state_init(uint32_t __attribute__((unused)) time_in_state)
 {
+
+    /* Initialize the game objects.
+     */
     assert(num_game_objs == 0);
 
     terrain = Terrain_construct(WORLD_WIDTH, WORLD_HEIGHT);
@@ -67,10 +77,18 @@ struct state state_init(uint32_t __attribute__((unused)) time_in_state)
     text = Text_construct();
     GAME_OBJS[num_game_objs++] = (GameObject*) text;
 
-    rt_keeper = rate_keeper_construct(18);
-    movie_play(SC_RESOURCES_PATH "/movies/intro.mpeg2", &rt_keeper);
-    rt_keeper = rate_keeper_construct(40);
+    /* Spin the intro movie at 18 (hopefully) FPS.
+     */
+    rk = rate_keeper_construct(18);
+    movie_play(SC_RESOURCES_PATH "/movies/intro.mpeg2", &rk);
 
+    /* Now, keep the main action at 40 FPS.
+     */
+    rk = rate_keeper_construct(40);
+
+    /* We'll duplicate this line from state_reset,
+     * otherwise we'll have an annoying 1-frame flash.
+     */
     screen_set_opacity(0);
 
     return SF(state_reset);
@@ -78,19 +96,19 @@ struct state state_init(uint32_t __attribute__((unused)) time_in_state)
 
 struct state state_reset(uint32_t time_in_state)
 {
+    /* Darken the screen, so that we'll fade in.
+     */
     if (time_in_state == 0)
         screen_set_opacity(0);
 
     FOR_EACH_GAME_OBJECT(GAME_OBJS, reset);
-
     left_tank_is_active = !left_tank_is_active;
+
     return SF(state_player_act);
 }
 
 struct state state_player_act(uint32_t time_in_state)
 {
-    assert(time_in_state < 10000);
-
     Tank *t = left_tank_is_active ? left_tank : right_tank;
     if (time_in_state == 0) {
         char msg[128];
@@ -104,8 +122,10 @@ struct state state_player_act(uint32_t time_in_state)
 
     if (t->has_released(t, &x, &y, &charge, &angle)) {
         float charge_scale = 0.2F;
+
         t->clear_release(t);
         projectile->fire_from(projectile, x, y, angle, charge_scale * charge);
+
         return SF(state_projectile_move);
     } else {
         TankInput input = {
@@ -123,7 +143,7 @@ struct state state_player_act(uint32_t time_in_state)
 
 struct state state_projectile_move(uint32_t time_in_state)
 {
-    assert(time_in_state < 300);
+    assert(time_in_state < 300); // Sanity check.
 
     if (time_in_state == 0)
         printf("The projectile is airborne!\n");
@@ -132,7 +152,10 @@ struct state state_projectile_move(uint32_t time_in_state)
 
     if (projectile->has_landed(projectile, landing_pos)) {
         projectile->reset(projectile);
-        FOR_EACH_GAME_OBJECT(GAME_OBJS, apply_impact, landing_pos[0], landing_pos[1]);
+
+        FOR_EACH_GAME_OBJECT(GAME_OBJS, apply_impact,
+                             landing_pos[0], landing_pos[1]);
+
         return SF(state_projectile_explode);
     } else
         return SF(state_projectile_move);
@@ -183,6 +206,8 @@ struct state state_projectile_explode(uint32_t time_in_state)
 PROFILING_SETUP(main_update);
 PROFILING_SETUP(main_render);
 
+/* Hereth followeth the main game loop.
+ */
 void scorched_run(void)
 {
     struct state cur_state = { state_init };
@@ -199,7 +224,7 @@ void scorched_run(void)
         FOR_EACH_GAME_OBJECT(GAME_OBJS, render);
         PROFILING_EXIT(main_render);
 
-        rate_keeper_tick(&rt_keeper);
+        rate_keeper_tick(&rk);
 
         screen_increment_opacity(15);
         screen_redraw();
