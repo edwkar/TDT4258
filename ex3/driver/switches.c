@@ -1,6 +1,7 @@
 #include "ap7000.h"
 #include "switches.h"
 
+
 #define SWITCHES_PIO             AVR32_PIOB
 #define SWITCHES_ALL             ((1<<SWITCHES_CNT)-1)
 
@@ -10,8 +11,6 @@ void switches_init(void)
 {
     switches_pio = &SWITCHES_PIO;
 
-    /* Enable LEDs.
-     */
     switches_pio->per = SWITCHES_ALL;
     switches_pio->puer = SWITCHES_ALL;
 }

@@ -1,1 +1,3 @@
-void meh() {}
+#include "leds.h"
+
+void meh(void) {}

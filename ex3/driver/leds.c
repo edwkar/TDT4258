@@ -1,6 +1,7 @@
 #include "ap7000.h"
 #include "leds.h"
 
+
 #define LEDS_PIO             AVR32_PIOB
 #define LEDS_ALL             ((1<<LEDS_CNT)-1)
 

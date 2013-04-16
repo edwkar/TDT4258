@@ -1,18 +1,20 @@
+#include <fcntl.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <sys/time.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <string.h>
-#include <pthread.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "SDL/SDL.h"
+
 #include "screen.h"
 #include "utils.h"
+
 
 static void *run_mock_fb(void *);
 static void *run_mock_dsp(void *);
@@ -23,7 +25,7 @@ static void *(*const SUBSYS_ROUTINES[]) (void *) = {
     run_mock_dsp,
     run_mock_input
 };
-static const int NUM_SUB_SYSTEMS = 3;
+#define NUM_SUB_SYSTEMS 3
 
 int main(int argc, char **argv)
 {
@@ -38,9 +40,9 @@ int main(int argc, char **argv)
 
     /* Start subsystems.
      */
-    for (int i = 0; i < NUM_SUB_SYSTEMS; ++i)
+    for (unsigned int i = 0; i < NUM_SUB_SYSTEMS; ++i)
         if (pthread_create(&threads[i], NULL, SUBSYS_ROUTINES[i], NULL) != 0)
-            die_hard("pthread_create");
+            DIE_HARD("pthread_create");
 
     /* Wait for subsystems to get ready. (Hopefully...)
      */
@@ -54,44 +56,41 @@ int main(int argc, char **argv)
 
     /* Kill subsystems.
      */
-    for (int i = 0; i < NUM_SUB_SYSTEMS; ++i)
+    for (unsigned int i = 0; i < NUM_SUB_SYSTEMS; ++i)
         if (pthread_cancel(threads[i]) != 0)
-            die_hard("pthread_cancel");
+            DIE_HARD("pthread_cancel");
 
-    if (system("rm " FRAME_BUFFER_PATH "") != 0)  die_hard("rm");
-    if (system("rm " DSP_PATH "") != 0) die_hard("rm");
-    if (system("rm " INPUT_DRIVER_PATH) != 0) die_hard("rm");
+    if (system("rm " FRAME_BUFFER_PATH "") != 0)  DIE_HARD("rm");
+    if (system("rm " DSP_PATH "") != 0) DIE_HARD("rm");
+    if (system("rm " INPUT_DRIVER_PATH) != 0) DIE_HARD("rm");
 
     return EXIT_SUCCESS;
 }
 
-
 static void *run_mock_fb(__attribute__((unused)) void *___)
 {
     if (system("rm -f " FRAME_BUFFER_PATH "") != 0)
-        die_hard("rm");
+        DIE_HARD("rm");
     if (system("dd if=/dev/zero of=" FRAME_BUFFER_PATH
                "  bs=1M count=2") != 0)
-        die_hard("dd");
+        DIE_HARD("dd");
 
     SDL_Surface *screen = SDL_SetVideoMode(FB_WIDTH, FB_HEIGHT, 32,
                                            SDL_SWSURFACE);
 
-    int fb_file = open(FRAME_BUFFER_PATH, O_RDWR);
-    if (fb_file < 0)
-        die_hard("open");
+    int fb_file = open_or_die(FRAME_BUFFER_PATH, O_RDWR);
 
     struct pixel *fb = mmap(NULL, FB_SIZE_BYTES, PROT_READ | PROT_WRITE,
                             MAP_SHARED, fb_file, 0);
     if (fb == MAP_FAILED)
-        die_hard("mmap");
+        DIE_HARD("mmap");
 
     puts("Mock framebuffer ready.");
 
     for (;;) {
         if (SDL_MUSTLOCK(screen))
             if (SDL_LockSurface(screen) < 0)
-                die_hard("SDL_LockSurface");
+                DIE_HARD("SDL_LockSurface");
 
         for (unsigned int i = 0; i < FB_SIZE; ++i) {
             unsigned int v = (((unsigned int) fb[i].red)   << 16) |
@@ -113,14 +112,14 @@ static void *run_mock_fb(__attribute__((unused)) void *___)
 static void *run_mock_dsp(__attribute__((unused)) void *___)
 {
     if (system("rm -f " DSP_PATH) != 0)
-        die_hard("rm");
+        DIE_HARD("rm");
     if (system("mkfifo " DSP_PATH) != 0)
-        die_hard("mkfifo");
+        DIE_HARD("mkfifo");
 
     puts("Mock DSP (almost) ready.");
 
     if (system("cat " DSP_PATH " | aplay -r 22100 -c 2") != 0)
-        die_hard("");
+        DIE_HARD("");
 
     return NULL;
 }
@@ -131,12 +130,12 @@ static void *run_mock_input(__attribute__((unused)) void *___) {
         SDLK_g, SDLK_h, SDLK_j, SDLK_k };
 
     if (system("rm -f " INPUT_DRIVER_PATH) != 0)
-        die_hard("rm");
+        DIE_HARD("rm");
 
     int fd = open(INPUT_DRIVER_PATH,
                   O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
     if (fd < 0)
-        die_hard("open");
+        DIE_HARD("Failed to open " INPUT_DRIVER_PATH);
 
     for (;;) {
         uint8_t *key_state = SDL_GetKeyState(NULL);
@@ -147,9 +146,9 @@ static void *run_mock_input(__attribute__((unused)) void *___) {
                 v |= 1U << i;
 
         if (lseek(fd, 0, SEEK_SET) != 0)
-            die_hard("lseek");
+            DIE_HARD("lseek");
         if (write(fd, &v, sizeof v) != sizeof v)
-            die_hard("write");
+            DIE_HARD("write");
 
         usleep(1000);
     }

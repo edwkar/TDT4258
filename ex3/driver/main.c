@@ -1,12 +1,14 @@
+#include <asm/uaccess.h>
+#include <linux/cdev.h>
+#include <linux/fs.h>
 #include <linux/init.h>
+#include <linux/ioport.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/fs.h>
-#include <linux/cdev.h>
-#include <linux/ioport.h>
-#include <asm/uaccess.h>
+
 #include "ap7000.h"
 #include "switches.h"
+
 
 #define DEV_NAME           "stk1000io"
 #define DEV_PATHNAME       "stk1000io"
@@ -20,7 +22,7 @@ static struct file_operations fops = {
     .read = switches_dev_read,
 };
 
-dev_t dev_num;
+static dev_t dev_num;
 static struct cdev cdev;
 
 static int __init init(void)
@@ -64,33 +66,6 @@ static ssize_t switches_dev_read(struct file *filp,
         *buffer++ = switches_read();
     return length;
 }
-
-/*
-static ssize_t
-dev_write(struct file *filp, const char *buf, size_t len, loff_t * off)
-{
-    const size_t num_to_read = 1;
-    int num_not_read;
-
-    char input[num_to_read];
-    if (len < num_to_read) {
-        printk(KERN_WARNING "Not enough data to read.");
-        return 0;
-    }
-
-    if ((num_not_read = copy_from_user(input, buf, num_to_read)) > 0) {
-        printk(KERN_WARNING "stk1000io::dev_write() - %d bytes *not* copied.\n");
-        return num_to_read - num_not_read;
-    }
-
-    leds_set((unsigned int) input[0]);
-    printk("%u\n", (unsigned int) input[0]);
-
-    *off += num_to_read;
-
-    return num_to_read;
-}
-*/
 
 module_init(init);
 module_exit(exit_);

@@ -2,24 +2,28 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "screen.h"
 #include "utils.h"
+
 #include "Projectile.h"
+
 
 #define PROJ_WIDTH  4
 #define PROJ_HEIGHT 4
-#define PROJ_XSHIFT PROJ_WIDTH/2
-#define PROJ_YSHIFT PROJ_HEIGHT/2
+#define PROJ_XSHIFT (PROJ_WIDTH/2)
+#define PROJ_YSHIFT (PROJ_HEIGHT/2)
 #define Y_ACC       -0.2
 
-static void Projectile_update_physics(GameObject* thisgo);
-static void Projectile_destruct(GameObject *thisgo);
-static void Projectile_render(GameObject *thisgo);
-static void Projectile_fire_from(struct _Projectile *this, uint16_t x,
-        uint16_t y, uint16_t angle, double power);
-static bool Projectile_has_landed(const struct _Projectile *this,
-        uint16_t landing_pos[static 2]);
-static void Projectile_reset(struct _Projectile *this);
+static void Projectile_update(GameObject *);
+static void Projectile_destruct(GameObject *);
+static void Projectile_render(GameObject *);
+static void Projectile_fire_from(struct _Projectile *, int32_t,
+                                 int32_t, uint32_t, float);
+static bool Projectile_has_landed(const struct _Projectile *,
+                                  int32_t[]);
+static void Projectile_reset(struct _Projectile *);
+
 
 Projectile * Projectile_construct(Terrain *terrain)
 {
@@ -34,9 +38,8 @@ void Projectile_init(Projectile *this, Terrain *terrain)
     GameObject_init(thisgo);
 
     thisgo->destruct = Projectile_destruct;
-    thisgo->update_physics = Projectile_update_physics;
+    thisgo->update = Projectile_update;
     thisgo->render = Projectile_render;
-
     this->reset = Projectile_reset;
     this->fire_from = Projectile_fire_from;
     this->has_landed = Projectile_has_landed;
@@ -46,8 +49,9 @@ void Projectile_init(Projectile *this, Terrain *terrain)
     this->reset(this);
 
     this->_sprite = sprite_construct(PROJ_WIDTH, PROJ_HEIGHT);
-    for (int i = 0; i < PROJ_WIDTH*PROJ_HEIGHT; ++i)
-        this->_sprite->data[i] = PIXEL_RED;
+    for (uint32_t x = 0; x < PROJ_WIDTH; ++x)
+        for (uint32_t y = 0; y < PROJ_HEIGHT; ++y)
+            sprite_set_pixel(this->_sprite, x, y, PIXEL_RED);
 }
 
 static void Projectile_destruct(GameObject *thisgo)
@@ -68,28 +72,29 @@ static void Projectile_reset(struct _Projectile *this)
 
 static void Projectile_render(GameObject *thisgo) {
     Projectile *this = (Projectile*) thisgo;
+
     if (!this->_is_active)
         return;
 
-    screen_draw_sprite(this->_x+PROJ_XSHIFT,
-                       this->_y+PROJ_YSHIFT,
+    screen_draw_sprite((int32_t) (this->_x + PROJ_XSHIFT),
+                       (int32_t) (this->_y + PROJ_YSHIFT),
                        this->_sprite);
 }
 
-static void Projectile_fire_from(struct _Projectile *this, uint16_t x,
-        uint16_t y, uint16_t angle, double power)
+static void Projectile_fire_from(struct _Projectile *this, int32_t x,
+                                 int32_t y, uint32_t angle, float power)
 {
     this->_x = x;
     this->_y = y;
-    this->_vx = power * cos(angle / 180.0 * M_PI);
-    this->_vy = power * sin(angle / 180.0 * M_PI);
+    this->_vx = power * cosf(angle / 180.0F * M_PI_F);
+    this->_vy = power * sinf(angle / 180.0F * M_PI_F);
     this->_is_active = true;
-
-    printf("%d %d %d %f %f\n", angle, x, y, this->_vx, this->_vy);
 }
 
-static void Projectile_update_physics(GameObject* thisgo) {
+static void Projectile_update(GameObject* thisgo)
+{
     Projectile *this = (Projectile*) thisgo;
+
     if (!this->_is_active)
         return;
 
@@ -98,21 +103,22 @@ static void Projectile_update_physics(GameObject* thisgo) {
     this->_vx += 0; /* wind? XXX */
     this->_vy += Y_ACC;
 
-    this->_x = clamp(0, this->_x, FB_WIDTH);
-    uint16_t ter_height = this->_terrain->height_at(this->_terrain,
-                                                    this->_x);
-    this->_y = max(this->_y, ter_height);
+    int32_t ter_height =
+        this->_terrain->height_at(this->_terrain, (int32_t) this->_x);
+
+    this->_y = MAX(this->_y, ter_height);
 }
 
 static bool Projectile_has_landed(const struct _Projectile *this,
-        uint16_t landing_pos[static 2])
+                                  int32_t landing_pos[static 2])
 {
-    uint16_t ter_height = this->_terrain->height_at(this->_terrain, this->_x);
+    int32_t ter_height =
+        this->_terrain->height_at(this->_terrain, (int32_t) this->_x);
 
     if (ter_height < this->_y)
         return false;
     else {
-        landing_pos[0] = (uint16_t) this->_x;
+        landing_pos[0] = (int32_t) this->_x;
         landing_pos[1] = ter_height;
         return true;
     }

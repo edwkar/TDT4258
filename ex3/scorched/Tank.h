@@ -2,9 +2,12 @@
 #define __TANK_H
 
 #include <stdbool.h>
+
 #include "sprite.h"
+
 #include "GameObject.h"
 #include "Terrain.h"
+
 
 #define TANK_TURRET_MAX_ANG 180
 
@@ -16,30 +19,43 @@ typedef struct {
     bool turret_charge;
 } TankInput;
 
+#define TANK_INPUT_ALL_OFF ((TankInput) { false, false, false,   \
+                                          false, false         })
+
 typedef struct _Tank {
     GameObject _base;
-    struct sprite *_body_sprite;
-    struct sprite *_turret_sprites[TANK_TURRET_MAX_ANG+1];
-    const Terrain *_terrain;
-    TankInput _input;
-    bool _has_released;
-    int16_t _turret_min_inc;
-    int16_t _turret_inclination;
-    int16_t _turret_max_inc;
-    uint16_t _turret_charge;
-    int16_t _start_x;
-    int16_t _health;
-    int16_t _health_to_lose;
 
     void (*set_input)(struct _Tank *, TankInput input);
-    bool (*has_released)(struct _Tank *, uint16_t *x, uint16_t *y,
-                         uint16_t *charge, int16_t *angle);
+
+    bool (*has_released)(struct _Tank *, int32_t *x, int32_t *y,
+                         uint32_t *charge, uint32_t *angle);
+
     bool (*is_updating_from_impact)(const struct _Tank *);
+
     void (*clear_release)(struct _Tank *);
+
     uint32_t (*get_health)(const struct _Tank *);
+
+    const Terrain *_terrain;
+    TankInput _input;
+
+    struct sprite *_body_sprite;
+    struct sprite *_turret_sprites[TANK_TURRET_MAX_ANG+1];
+
+    bool _has_released;
+    uint32_t _turret_MIN_inc;
+    uint32_t _turret_inclination;
+    uint32_t _turret_MAX_inc;
+    uint32_t _turret_charge;
+
+    int32_t _start_x;
+
+    int32_t _health;
+    int32_t _health_to_lose;
 } Tank;
 
-Tank * Tank_construct(const Terrain *terrain, uint16_t start_x, bool is_left);
-void Tank_init(Tank *this, const Terrain *terrain, uint16_t start_x, bool is_left);
+Tank * Tank_construct(const Terrain *terrain, int32_t start_x, bool is_left);
+void Tank_init(Tank *this, const Terrain *terrain, int32_t start_x, 
+               bool is_left);
 
 #endif
