@@ -118,7 +118,7 @@ static void *run_mock_dsp(__attribute__((unused)) void *___)
 
     puts("Mock DSP (almost) ready.");
 
-    if (system("cat " DSP_PATH " | aplay -r 22100 -c 2") != 0)
+    if (system("cat " DSP_PATH " | aplay --buffer-time=20 -r 22100 -c 2") != 0)
         DIE_HARD("");
 
     return NULL;

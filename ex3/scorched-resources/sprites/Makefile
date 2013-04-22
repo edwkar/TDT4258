@@ -1,4 +1,4 @@
-all: *.py
+tank.image: *.py
 	python render_turret.py
 	python render_war.py
 

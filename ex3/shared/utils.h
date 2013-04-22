@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <time.h>
 
 
@@ -44,5 +45,10 @@ ALWAYS_INLINE static uint32_t get_time_us(void)
 
     return (uint32_t) (1000000 * ts.tv_sec + ts.tv_nsec / 1000);
 }
+
+#define SYNCHRONIZED(MUT, CODE) \
+    assert(pthread_mutex_lock(&MUT) == 0); \
+    CODE \
+    assert(pthread_mutex_unlock(&MUT) == 0)
 
 #endif

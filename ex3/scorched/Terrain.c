@@ -13,14 +13,15 @@
 
 
 #define IMPACT_RANGE     20
-// #define MIN_Y_FOR_IMPACT 10
+#define MIN_Y_FOR_IMPACT 10
 
-static void Terrain_destruct(GameObject *thisgo);
-static void Terrain_render(GameObject *thisgo);
-static void Terrain_init_grid(Terrain *this);
-static int32_t Terrain_height_at(const Terrain *this, int32_t xpos);
-static void Terrain_apply_impact(GameObject *thisgo, int32_t m_x, int32_t m_y);
-static void Terrain_regenerate_sprite(Terrain *this);
+static void Terrain_destruct(GameObject *);
+static void Terrain_render(GameObject *);
+static void Terrain_reset(GameObject *);
+static void Terrain_init_grid(Terrain *);
+static int32_t Terrain_height_at(const Terrain *, int32_t);
+static void Terrain_apply_impact(GameObject *, int32_t, int32_t);
+static void Terrain_regenerate_sprite(Terrain *);
 
 Terrain * Terrain_construct(uint32_t width, uint32_t height)
 {
@@ -35,6 +36,7 @@ void Terrain_init(Terrain *this, uint32_t width, uint32_t height)
     GameObject_init(thisgo);
 
     thisgo->destruct = Terrain_destruct;
+    thisgo->reset = Terrain_reset;
     thisgo->render = Terrain_render;
     thisgo->apply_impact = Terrain_apply_impact;
 
@@ -50,8 +52,7 @@ void Terrain_init(Terrain *this, uint32_t width, uint32_t height)
     this->_bg_sprite = sprite_load(SC_RESOURCES_PATH "/sprites/war.gif.image");
     this->_sprite = sprite_construct(width, height);
 
-    Terrain_init_grid(this);
-    Terrain_regenerate_sprite(this);
+    thisgo->reset(thisgo);
 }
 
 static void Terrain_destruct(GameObject *thisgo)
@@ -65,11 +66,21 @@ static void Terrain_destruct(GameObject *thisgo)
     free(thisgo);
 }
 
+static void Terrain_reset(GameObject *thisgo)
+{
+    Terrain *this = (Terrain*) thisgo;
+
+    Terrain_init_grid(this);
+    Terrain_regenerate_sprite(this);
+}
+
 static void Terrain_init_grid(Terrain *this)
 {
     for (uint32_t y = 0, idx = 0; y < this->m_height; ++y)
         for (uint32_t x = 0; x < this->m_width; ++x, ++idx) {
-            uint32_t edge = (uint32_t) MAX(80, -0.01*pow((float)x-140.0, 2)+120);
+            uint32_t edge = (uint32_t) MAX(80,
+                                           -0.01 * pow((float)x - 140.0, 2)
+                                           + 120);
             this->m_grid[idx] = y < edge;
         }
 }
@@ -102,22 +113,27 @@ static int32_t Terrain_height_at(const Terrain *this, int32_t xpos)
     return 0;
 }
 
-// XXX OMFG REFACTOR THIS.
 static void Terrain_apply_impact(GameObject *thisgo, int32_t m_x, int32_t m_y)
 {
     Terrain *this = (Terrain*) thisgo;
 
-    for (int32_t x = m_x-2*IMPACT_RANGE; x < m_x+2*IMPACT_RANGE; ++x)
+    for (int32_t x = m_x-2*IMPACT_RANGE; x < m_x+2*IMPACT_RANGE; ++x) {
+        bool kill_rest = false;
+
         for (int32_t y = m_y-2*IMPACT_RANGE; y < m_y+2*IMPACT_RANGE; ++y) {
-            /*
             bool dist_less = (x-m_x)*(x-m_x) + (y-m_y)*(y-m_y) <=
                              2*IMPACT_RANGE*IMPACT_RANGE;
-            if (x >= 0 && y >= MIN_Y_FOR_IMPACT &&
-                x < (int32_t) this->m_width && y < (int32_t) this->m_height
-                && dist_less)
-                this->m_grid[y*this->m_width + x] = false;
-                */
+
+            bool is_in_bounds =    x >= 0 && y >= MIN_Y_FOR_IMPACT
+                                && x < (int32_t) this->m_width
+                                && y < (int32_t) this->m_height;
+
+            if (is_in_bounds && (dist_less || kill_rest)) {
+                this->m_grid[y * (int32_t )this->m_width + x] = false;
+                kill_rest = true;
+            }
         }
+    }
 
     Terrain_regenerate_sprite(this);
 }

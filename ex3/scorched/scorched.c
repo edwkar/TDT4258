@@ -183,16 +183,15 @@ struct state state_projectile_explode(uint32_t time_in_state)
     if (time_in_state == 0) {
         screen_set_shaking(true);
         explode_leave_time = 0x424242;
+        audio_play(SC_RESOURCES_PATH "/audio/explode.raw");
     }
 
     bool all_updates_done = !(
             left_tank->is_updating_from_impact(left_tank) ||
             right_tank->is_updating_from_impact(right_tank));
 
-    if (all_updates_done && explode_leave_time == 0x424242) {
-        audio_play(SC_RESOURCES_PATH "/audio/explode.raw");
+    if (all_updates_done && explode_leave_time == 0x424242)
         explode_leave_time = time_in_state + 30;
-    }
 
     if (time_in_state < explode_leave_time)
         return SF(state_projectile_explode);

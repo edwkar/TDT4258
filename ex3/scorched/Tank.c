@@ -152,7 +152,7 @@ static void Tank_apply_impact(GameObject *thisgo, int32_t x, int32_t y)
     /* Found through careful messing around at Wolfram Alpha.
      */
     this->m_health_to_lose = (int32_t) MAX(0,
-                                          MAX(100 - pow(dist, 1), 40  - dist));
+                                          MAX(100 - pow(dist, 1.8), 40  - dist));
                                           //MAX(100 - pow(dist, 2.8), 40  - dist));
 }
 

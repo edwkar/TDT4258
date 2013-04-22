@@ -16,7 +16,11 @@ struct rate_keeper rate_keeper_construct(uint32_t intended_fps)
         .intended_fps = intended_fps,
         .time_begin = get_time_ms(),
         .num_cnts = -1,
+#ifdef HOST_BUILD
+        .sleep_time_ms = 40
+#else
         .sleep_time_ms = 20
+#endif
     };
 }
 
