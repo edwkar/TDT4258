@@ -47,7 +47,7 @@ void Terrain_init(Terrain *this, uint32_t width, uint32_t height)
     thisgo->m_ypos = 0;
 
     this->m_grid = malloc_or_die(width * height * sizeof(uint8_t));
-    this->_bg_sprite = sprite_load(SC_RESOURCES_PATH "war.gif.image");
+    this->_bg_sprite = sprite_load(SC_RESOURCES_PATH "/sprites/war.gif.image");
     this->_sprite = sprite_construct(width, height);
 
     Terrain_init_grid(this);

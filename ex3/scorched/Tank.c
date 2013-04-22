@@ -91,13 +91,13 @@ void Tank_init(Tank *this, const Terrain *terrain, int32_t start_x,
 
     /* Load sprites.
      */
-    this->_body_sprite = sprite_load(SC_RESOURCES_PATH "/tank.image");
+    this->_body_sprite = sprite_load(SC_RESOURCES_PATH "/sprites/tank.image");
     if (!is_left)
         sprite_invert_horizontal(this->_body_sprite);
 
     for (int i = 0; i <= TANK_TURRET_MAX_ANG; ++i) {
         char fn[256];
-        snprintf(fn, sizeof fn, "%s/turret_%d.image",
+        snprintf(fn, sizeof fn, "%s/sprites/turret_%d.image",
                  SC_RESOURCES_PATH, i);
         this->_turret_sprites[i] = sprite_load(fn);
     }

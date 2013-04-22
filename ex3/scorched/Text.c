@@ -49,7 +49,7 @@ void Text_init(Text *this)
     this->m_need_update = true;
 
     this->_font_sprite = sprite_load(SC_RESOURCES_PATH
-                                      "/font/moms_typewriter.gif.image");
+                                      "/fonts/moms_typewriter.gif.image");
     this->_out_sprite = sprite_construct(TEXT_BUF_WIDTH, TEXT_BUF_HEIGHT);
 
     this->m_phase = 0;
