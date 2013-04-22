@@ -1,5 +1,5 @@
-#ifndef __INPUT__H
-#define __INPUT__H
+#ifndef INPUTH
+#define INPUTH
 
 #include <stdbool.h>
 

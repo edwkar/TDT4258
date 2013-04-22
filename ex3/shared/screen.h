@@ -1,5 +1,5 @@
-#ifndef __SCREEN__H
-#define __SCREEN__H
+#ifndef SCREENH
+#define SCREENH
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -40,7 +40,7 @@ void screen_clear(struct pixel color);
 void screen_draw_rect(int32_t x, int32_t y,
                       uint32_t w, uint32_t h,
                       struct pixel color);
-void screen_draw_sprite(int32_t _x, int32_t _y, struct sprite *s);
+void screen_draw_sprite(int32_t m_x, int32_t m_y, struct sprite *s);
 void screen_draw_sprite_raw(struct sprite *s);
 void screen_set_shaking(bool new_val);
 void screen_set_opacity(uint8_t val);

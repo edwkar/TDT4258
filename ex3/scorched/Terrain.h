@@ -1,5 +1,5 @@
-#ifndef __TERRAIN_H
-#define __TERRAIN_H
+#ifndef TERRAIN_H
+#define TERRAIN_H
 
 #include <stdint.h>
 
@@ -8,14 +8,14 @@
 #include "GameObject.h"
 
 
-typedef struct _Terrain {
-    GameObject _base;
+typedef struct m_Terrain {
+    GameObject m_base;
 
-    int32_t (*height_at)(const struct _Terrain *this, int32_t xpos);
+    int32_t (*height_at)(const struct m_Terrain *this, int32_t xpos);
 
-    uint32_t _width;
-    uint32_t _height;
-    uint8_t* _grid;
+    uint32_t m_width;
+    uint32_t m_height;
+    uint8_t* m_grid;
 
     struct sprite *_bg_sprite;
     struct sprite *_sprite;

@@ -30,7 +30,7 @@ static void *(*const SUBSYS_ROUTINES[]) (void *) = {
 int main(int argc, char **argv)
 {
     if (argc != 2) {
-        fprintf(stderr, "Usage: %s [command]\n", argv[0]);
+        fprintf(stderr, "Usage: %s [comand]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -83,7 +83,7 @@ static void *run_mock_fb(__attribute__((unused)) void *___)
     struct pixel *fb = mmap(NULL, FB_SIZE_BYTES, PROT_READ | PROT_WRITE,
                             MAP_SHARED, fb_file, 0);
     if (fb == MAP_FAILED)
-        DIE_HARD("mmap");
+        DIE_HARD("map");
 
     puts("Mock framebuffer ready.");
 

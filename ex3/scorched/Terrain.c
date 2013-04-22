@@ -19,7 +19,7 @@ static void Terrain_destruct(GameObject *thisgo);
 static void Terrain_render(GameObject *thisgo);
 static void Terrain_init_grid(Terrain *this);
 static int32_t Terrain_height_at(const Terrain *this, int32_t xpos);
-static void Terrain_apply_impact(GameObject *thisgo, int32_t _x, int32_t _y);
+static void Terrain_apply_impact(GameObject *thisgo, int32_t m_x, int32_t m_y);
 static void Terrain_regenerate_sprite(Terrain *this);
 
 Terrain * Terrain_construct(uint32_t width, uint32_t height)
@@ -40,13 +40,13 @@ void Terrain_init(Terrain *this, uint32_t width, uint32_t height)
 
     this->height_at = Terrain_height_at;
 
-    this->_width = width;
-    this->_height = height;
+    this->m_width = width;
+    this->m_height = height;
 
-    thisgo->_xpos = 0;
-    thisgo->_ypos = 0;
+    thisgo->m_xpos = 0;
+    thisgo->m_ypos = 0;
 
-    this->_grid = malloc_or_die(width * height * sizeof(uint8_t));
+    this->m_grid = malloc_or_die(width * height * sizeof(uint8_t));
     this->_bg_sprite = sprite_load(SC_RESOURCES_PATH "war.gif.image");
     this->_sprite = sprite_construct(width, height);
 
@@ -58,7 +58,7 @@ static void Terrain_destruct(GameObject *thisgo)
 {
     Terrain *this = (Terrain*) thisgo;
 
-    free(this->_grid);
+    free(this->m_grid);
     sprite_free(this->_bg_sprite);
     sprite_free(this->_sprite);
 
@@ -67,19 +67,19 @@ static void Terrain_destruct(GameObject *thisgo)
 
 static void Terrain_init_grid(Terrain *this)
 {
-    for (uint32_t y = 0, idx = 0; y < this->_height; ++y)
-        for (uint32_t x = 0; x < this->_width; ++x, ++idx) {
+    for (uint32_t y = 0, idx = 0; y < this->m_height; ++y)
+        for (uint32_t x = 0; x < this->m_width; ++x, ++idx) {
             uint32_t edge = (uint32_t) MAX(80, -0.01*pow((float)x-140.0, 2)+120);
-            this->_grid[idx] = y < edge;
+            this->m_grid[idx] = y < edge;
         }
 }
 
 static void Terrain_regenerate_sprite(Terrain *this)
 {
-    for (uint32_t y = 0, idx = 0; y < this->_height; ++y)
-        for (uint32_t x = 0; x < this->_width; ++x, ++idx) {
+    for (uint32_t y = 0, idx = 0; y < this->m_height; ++y)
+        for (uint32_t x = 0; x < this->m_width; ++x, ++idx) {
             struct pixel p;
-            if (this->_grid[idx])
+            if (this->m_grid[idx])
                 p = PIXEL_BLACK;
             else
                 p = sprite_get_pixel(this->_bg_sprite, x, y);
@@ -90,32 +90,32 @@ static void Terrain_regenerate_sprite(Terrain *this)
 
 static int32_t Terrain_height_at(const Terrain *this, int32_t xpos)
 {
-    bool is_outside = xpos < 0 || xpos >= (int32_t) this->_width;
+    bool is_outside = xpos < 0 || xpos >= (int32_t) this->m_width;
     if (is_outside)
         return 0;
 
-    for (uint32_t y = this->_height-1; y > 0; --y) {
-        uint32_t idx = y*this->_width + (uint32_t) xpos;
-        if (this->_grid[idx])
+    for (uint32_t y = this->m_height-1; y > 0; --y) {
+        uint32_t idx = y*this->m_width + (uint32_t) xpos;
+        if (this->m_grid[idx])
             return (int32_t) y;
     }
     return 0;
 }
 
 // XXX OMFG REFACTOR THIS.
-static void Terrain_apply_impact(GameObject *thisgo, int32_t _x, int32_t _y)
+static void Terrain_apply_impact(GameObject *thisgo, int32_t m_x, int32_t m_y)
 {
     Terrain *this = (Terrain*) thisgo;
 
-    for (int32_t x = _x-2*IMPACT_RANGE; x < _x+2*IMPACT_RANGE; ++x)
-        for (int32_t y = _y-2*IMPACT_RANGE; y < _y+2*IMPACT_RANGE; ++y) {
+    for (int32_t x = m_x-2*IMPACT_RANGE; x < m_x+2*IMPACT_RANGE; ++x)
+        for (int32_t y = m_y-2*IMPACT_RANGE; y < m_y+2*IMPACT_RANGE; ++y) {
             /*
-            bool dist_less = (x-_x)*(x-_x) + (y-_y)*(y-_y) <=
+            bool dist_less = (x-m_x)*(x-m_x) + (y-m_y)*(y-m_y) <=
                              2*IMPACT_RANGE*IMPACT_RANGE;
             if (x >= 0 && y >= MIN_Y_FOR_IMPACT &&
-                x < (int32_t) this->_width && y < (int32_t) this->_height
+                x < (int32_t) this->m_width && y < (int32_t) this->m_height
                 && dist_less)
-                this->_grid[y*this->_width + x] = false;
+                this->m_grid[y*this->m_width + x] = false;
                 */
         }
 

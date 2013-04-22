@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <string.h>
 
 #include "audio.h"
 #include "input.h"
@@ -15,10 +16,12 @@
 #include "Text.h"
 
 
-#define WORLD_WIDTH FB_WIDTH
-#define WORLD_HEIGHT FB_HEIGHT
-#define LEFT_TANK_START_X 40
-#define RIGHT_TANK_START_X (WORLD_WIDTH - 40 - 40)
+#define WORLD_WIDTH                    FB_WIDTH
+#define WORLD_HEIGHT                   FB_HEIGHT
+#define LEFT_TANK_START_X              40
+#define RIGHT_TANK_START_X             (WORLD_WIDTH - 40 - 40)
+
+#define START_NUM_LIVES                2
 
 
 static struct rate_keeper rk;
@@ -38,21 +41,24 @@ static Text *text = NULL;
 
 /* "Score table".
  */
-static unsigned int num_wins_left = 0;
-static unsigned int num_wins_right = 0;
+static unsigned int num_lives_left = 0;
+static unsigned int num_lives_right = 0;
 
 
 
 struct state {
-    struct state (*act)(uint32_t);
+    struct state (*act)(uint32_t time_in_state);
 };
 #define SF(X) ((struct state){ X })
 
-struct state state_init(uint32_t time_in_state);
-struct state state_reset(uint32_t time_in_state);
-struct state state_player_act(uint32_t time_in_state);
-struct state state_projectile_move(uint32_t time_in_state);
-struct state state_projectile_explode(uint32_t time_in_state);
+struct state state_init(uint32_t);
+struct state state_prepare_round(uint32_t);
+struct state state_player_act(uint32_t);
+struct state state_projectile_move(uint32_t);
+struct state state_projectile_explode(uint32_t);
+struct state state_report_score(uint32_t);
+struct state state_quit(uint32_t);
+struct state state_report_winner(uint32_t);
 
 
 struct state state_init(uint32_t __attribute__((unused)) time_in_state)
@@ -80,31 +86,39 @@ struct state state_init(uint32_t __attribute__((unused)) time_in_state)
     /* Spin the intro movie at 18 (hopefully) FPS.
      */
     rk = rate_keeper_construct(18);
+    screen_clear(PIXEL_BLACK);
+    screen_redraw();
+    audio_play(SC_RESOURCES_PATH "/audio/intro.raw");
     movie_play(SC_RESOURCES_PATH "/movies/intro.mpeg2", &rk);
 
     /* Now, keep the main action at 40 FPS.
      */
     rk = rate_keeper_construct(40);
 
-    /* We'll duplicate this line from state_reset,
+    /* We'll duplicate this line from state_prepare_round,
      * otherwise we'll have an annoying 1-frame flash.
      */
     screen_set_opacity(0);
 
-    return SF(state_reset);
+    num_lives_left = START_NUM_LIVES;
+    num_lives_right = START_NUM_LIVES;
+
+    return SF(state_prepare_round);
 }
 
-struct state state_reset(uint32_t time_in_state)
+struct state state_prepare_round(uint32_t time_in_state)
 {
     /* Darken the screen, so that we'll fade in.
+     * and, let's wait here for a while.
      */
-    if (time_in_state == 0)
+    if (time_in_state < 20) {
         screen_set_opacity(0);
-
-    FOR_EACH_GAME_OBJECT(GAME_OBJS, reset);
-    left_tank_is_active = !left_tank_is_active;
-
-    return SF(state_player_act);
+        return SF(state_prepare_round);
+    } else {
+        FOR_EACH_GAME_OBJECT(GAME_OBJS, reset);
+        left_tank_is_active = !left_tank_is_active;
+        return SF(state_player_act);
+    }
 }
 
 struct state state_player_act(uint32_t time_in_state)
@@ -121,6 +135,8 @@ struct state state_player_act(uint32_t time_in_state)
     uint32_t charge, angle;
 
     if (t->has_released(t, &x, &y, &charge, &angle)) {
+        audio_play(SC_RESOURCES_PATH "/audio/fire.raw");
+
         float charge_scale = 0.2F;
 
         t->clear_release(t);
@@ -167,40 +183,90 @@ struct state state_projectile_explode(uint32_t time_in_state)
     if (time_in_state == 0) {
         screen_set_shaking(true);
         explode_leave_time = 0x424242;
-        printf("The projectile explodes!\n");
     }
 
-    bool are_all_updates_done = !(
+    bool all_updates_done = !(
             left_tank->is_updating_from_impact(left_tank) ||
             right_tank->is_updating_from_impact(right_tank));
 
-    if (are_all_updates_done && explode_leave_time == 0x424242)
+    if (all_updates_done && explode_leave_time == 0x424242) {
+        audio_play(SC_RESOURCES_PATH "/audio/explode.raw");
         explode_leave_time = time_in_state + 30;
+    }
 
-    if (time_in_state == explode_leave_time) {
-        screen_set_shaking(false);
-
-        bool left_lives = left_tank->get_health(left_tank) != 0;
-        bool right_lives = right_tank->get_health(right_tank) != 0;
-
-        char msg[128];
-        snprintf(msg, sizeof msg, "%c %c\n", 'A'+left_lives, 'A'+right_lives);
-        text->add(text, TEXT_CENTER_HORIZONTAL, 150, msg, 3500);
-
-        left_tank_is_active = !left_tank_is_active;
-
-        if (left_lives && right_lives)
-            return SF(state_player_act);
-        else if (left_lives) {
-            num_wins_left++;
-            return SF(state_reset);
-        } else if (right_lives) {
-            num_wins_right++;
-            return SF(state_reset);
-        } else
-            return SF(state_reset);
-    } else
+    if (time_in_state < explode_leave_time)
         return SF(state_projectile_explode);
+
+    screen_set_shaking(false);
+
+    bool left_survives = left_tank->get_health(left_tank) != 0;
+    bool right_survives = right_tank->get_health(right_tank) != 0;
+
+    if (left_survives && right_survives) {
+        left_tank_is_active = !left_tank_is_active;
+        return SF(state_player_act);
+    } else {
+        if (!left_survives)
+            num_lives_left--;
+        if (!right_survives)
+            num_lives_right--;
+
+        bool both_alive = num_lives_left > 0 && num_lives_right > 0;
+
+        return SF(both_alive ? state_report_score : state_report_winner);
+    }
+}
+
+struct state state_report_score(uint32_t time_in_state)
+{
+    if (time_in_state == 100)
+        return SF(state_prepare_round);
+
+    if (time_in_state == 0) {
+        char msg[256];
+
+        size_t i = 0;
+
+        for (size_t j = 0; j < num_lives_left; ++j)
+            msg[i++] = 'X';
+        msg[i++] = ' ';
+        msg[i++] = ' ';
+        for (size_t j = 0; j < num_lives_right; ++j)
+            msg[i++] = 'X';
+        msg[i] = '\0';
+
+        text->add(text, TEXT_CENTER_HORIZONTAL, 180, msg, 2200);
+    }
+
+    return SF(state_report_score);
+}
+
+struct state state_report_winner(uint32_t time_in_state)
+{
+    if (time_in_state == 100)
+        return SF(state_quit);
+
+    if (time_in_state == 0) {
+        char *msg = NULL;
+
+        if (num_lives_left == 0 && num_lives_right == 0)
+            msg = "You both suck!";
+        else if (num_lives_right == 0)
+            msg = "Left tank wins!";
+        else if (num_lives_left == 0)
+            msg = "Right tank wins!";
+        else
+            assert(false);
+
+        text->add(text, TEXT_CENTER_HORIZONTAL, 180, msg, 2200);
+    }
+
+    return SF(state_report_winner);
+}
+
+struct state state_quit(uint32_t __attribute__((unused)) time_in_state)
+{
+    return SF(NULL /* I should never be dereferenced. */);
 }
 
 PROFILING_SETUP(main_update);
@@ -226,8 +292,8 @@ void scorched_run(void)
 
         rate_keeper_tick(&rk);
 
-        screen_increment_opacity(15);
         screen_redraw();
+        screen_increment_opacity(15);
 
         bool is_new_state = next_state.act != cur_state.act;
         if (is_new_state) {
@@ -235,7 +301,7 @@ void scorched_run(void)
             cur_state = next_state;
         }
 
-        if (input_key_is_down(input_6))
+        if (next_state.act == state_quit || input_key_is_down(input_6))
             break;
     }
 

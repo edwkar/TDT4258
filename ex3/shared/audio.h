@@ -1,5 +1,5 @@
-#ifndef __AUDIO__H
-#define __AUDIO__H
+#ifndef AUDIOH
+#define AUDIOH
 
 void audio_init(void);
 void audio_play(const char *filename);

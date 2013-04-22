@@ -1,5 +1,5 @@
-#ifndef __MOVIE_H
-#define __MOVIE_H
+#ifndef MOVIE_H
+#define MOVIE_H
 
 #include <stdint.h>
 

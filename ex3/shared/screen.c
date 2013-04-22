@@ -10,7 +10,6 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -39,7 +38,7 @@ void screen_init(void)
               MAP_SHARED, fb_fd, 0);
 
     if (fb == MAP_FAILED)
-        DIE_HARD("mmap");
+        DIE_HARD("map");
 }
 
 void screen_set_shaking(bool new_val)
@@ -79,15 +78,15 @@ inline static void screen_put_pixel(uint32_t x, uint32_t y,
 }
 
 PROFILING_SETUP(screen_draw_rect);
-void screen_draw_rect(int32_t _x, int32_t _y,
+void screen_draw_rect(int32_t from_x, int32_t from_y,
                       unsigned int w, unsigned int h,
                       struct pixel color)
 {
     PROFILING_ENTER(screen_draw_rect);
 
-    for (int32_t i = MAX(-_x, 0); i < (int32_t) w; ++i)
-        for (int32_t j = MAX(-_y, 0); j < (int32_t) h; ++j)
-            screen_put_pixel((uint32_t) (_x+i), (uint32_t) (_y+j), color);
+    for (int32_t i = MAX(-from_x, 0); i < (int32_t) w; ++i)
+        for (int32_t j = MAX(-from_y, 0); j < (int32_t) h; ++j)
+            screen_put_pixel((uint32_t) (from_x+i), (uint32_t) (from_y+j), color);
 
     PROFILING_EXIT(screen_draw_rect);
 }
@@ -97,12 +96,14 @@ void screen_draw_sprite_raw(struct sprite *s)
 {
     PROFILING_ENTER(screen_draw_sprite_raw);
 
-    assert(s->_width == FB_WIDTH && s->_height == FB_HEIGHT);
+    assert(s->m_width == FB_WIDTH && s->m_height == FB_HEIGHT);
 
-    for (uint32_t y = 0; y < s->_height; ++y) {
-        uint32_t s_idx  = y*FB_WIDTH;
-        uint32_t fb_idx = (FB_HEIGHT-1-y)*FB_WIDTH;
-        memcpy(back_buf+fb_idx, s->_data+s_idx,
+    for (uint32_t y = 0; y < s->m_height; ++y) {
+        uint32_t sprite_idx = y * FB_WIDTH;
+        uint32_t fb_idx = (FB_HEIGHT-1-y) * FB_WIDTH;
+
+        memcpy(back_buf + fb_idx,
+               s->_data + sprite_idx,
                FB_WIDTH * sizeof(struct pixel));
     }
 
@@ -110,29 +111,35 @@ void screen_draw_sprite_raw(struct sprite *s)
 }
 
 PROFILING_SETUP(screen_draw_sprite);
-void screen_draw_sprite(int32_t _x, int32_t _y, struct sprite *s)
+void screen_draw_sprite(int32_t from_x, int32_t from_y, struct sprite *s)
 {
     PROFILING_ENTER(screen_draw_sprite);
 
-    int32_t y    = MAX(0,         _y + (int32_t) s->_y_draw_start);
-    int32_t yMAX = MIN(FB_HEIGHT, _y + (int32_t) s->_y_draw_end);
+    int32_t y = from_y + (int32_t) s->m_y_draw_start;
+    if (y < 0)
+        y = 0;
 
-    for (; y < yMAX; ++y) {
-        int32_t x = _x;
-        int32_t xMAX = MIN(FB_WIDTH, _x + (int32_t) s->_width);
+    int32_t tom_y = from_y + (int32_t) s->m_y_draw_end;
+    if (y > FB_HEIGHT)
+        y = FB_HEIGHT;
 
-        int32_t fb_idx = (FB_HEIGHT-1-y)*FB_WIDTH + x;
-        assert(fb_idx < FB_HEIGHT*FB_WIDTH);
-        int32_t s_idx  = (y-_y) * (int32_t) s->_width;
+    for ( ; y < tom_y; ++y) {
+        int32_t x    = from_x;
+        int32_t tom_x = MIN(FB_WIDTH, from_x + (int32_t) s->m_width);
+
+        /* Remember, we must draw "upside down".
+         */
+        int32_t fb_idx = (FB_HEIGHT-1-y) * FB_WIDTH + x;
+
+        int32_t sprite_idx = (y - from_y) * (int32_t) s->m_width;
 
         while (x < 0)
-            ++x, ++fb_idx, ++s_idx;
-        assert(fb_idx < FB_HEIGHT*FB_WIDTH);
+            ++x, ++fb_idx, ++sprite_idx;
 
         struct pixel * restrict bb = &back_buf[fb_idx];
-        struct pixel * restrict ss = &s->_data[s_idx];
+        struct pixel * restrict ss = &s->_data[sprite_idx];
 
-        for ( ; x < xMAX; ++x, ++bb, ++ss)
+        for ( ; x < tom_x; ++x, ++bb, ++ss)
             if (!IS_TRANSPARENT(ss))
                 *bb = *ss;
     }
@@ -140,9 +147,9 @@ void screen_draw_sprite(int32_t _x, int32_t _y, struct sprite *s)
     PROFILING_EXIT(screen_draw_sprite);
 }
 
-ALWAYS_INLINE(static void apply_opacity(uint8_t *v) {
+ALWAYS_INLINE static void apply_opacity(uint8_t *v) {
     *v = (*v * screen_opacity) / SCREEN_MAX_OPACITY;
-})
+}
 
 static void screen_apply_opacity(void)
 {

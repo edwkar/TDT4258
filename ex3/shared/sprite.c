@@ -13,16 +13,16 @@ struct sprite * sprite_construct(uint32_t width, uint32_t height)
 {
     struct sprite *s = malloc_or_die(sizeof(struct sprite));
 
-    s->_width = width;
-    s->_height = height;
+    s->m_width = width;
+    s->m_height = height;
 
     size_t n = width * height * sizeof(struct pixel);
 
     s->_data = malloc_or_die(n);
     memset(s->_data, 255, n);
 
-    s->_y_draw_start = 0;
-    s->_y_draw_end = height;
+    s->m_y_draw_start = 0;
+    s->m_y_draw_end = height;
 
     return s;
 }
@@ -58,8 +58,8 @@ struct sprite * sprite_load(const char *path)
 
     struct sprite *s = sprite_construct(w, h);
 
-    for (uint32_t x = 0, idx = 0; x < s->_width; ++x)
-        for (uint32_t y = 0; y < s->_height; ++y, ++idx) {
+    for (uint32_t x = 0, idx = 0; x < s->m_width; ++x)
+        for (uint32_t y = 0; y < s->m_height; ++y, ++idx) {
             bool is_transparent = data[4*idx+3] != 0;
             struct pixel p = PIXEL(data[4*idx], data[4*idx+1], data[4*idx+2]);
 
@@ -74,9 +74,9 @@ struct sprite * sprite_load(const char *path)
 
 void sprite_invert_horizontal(struct sprite *s)
 {
-    for (uint32_t y = 0; y < s->_height; ++y)
-        for (uint32_t x = 0; x < s->_width/2; ++x) {
-            uint32_t xinv = s->_width-x-1;
+    for (uint32_t y = 0; y < s->m_height; ++y)
+        for (uint32_t x = 0; x < s->m_width/2; ++x) {
+            uint32_t xinv = s->m_width-x-1;
             struct pixel t = sprite_get_pixel(s, x, y);
             sprite_set_pixel(s,  x, y, sprite_get_pixel(s, xinv, y));
             sprite_set_pixel(s, xinv, y, t);

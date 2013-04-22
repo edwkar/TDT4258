@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -20,8 +21,15 @@
 #define MOVIE_HEIGHT        140
 #define MOVIE_SHIFT         50*FB_WIDTH
 
+static void run_play_loop(FILE *ffmpeg,
+                          struct sprite *out_sprite,
+                          size_t num_to_read,
+                          struct rate_keeper *rk);
+
 void movie_play(const char *path, struct rate_keeper *rk)
 {
+    assert(strlen(path) < 256);
+
     char cmd_line_string[512];
     snprintf(cmd_line_string, sizeof cmd_line_string,
              "%s -i \"%s\" "
@@ -37,7 +45,20 @@ void movie_play(const char *path, struct rate_keeper *rk)
         out_sprite->_data[i] = PIXEL_BLACK;
 
     size_t num_to_read = MOVIE_WIDTH * MOVIE_HEIGHT * sizeof(struct pixel);
+    run_play_loop(ffmpeg, out_sprite, num_to_read, rk);
 
+    int ffmpeg_ret = pclose(ffmpeg);
+    if (ffmpeg_ret != 0)
+        DIE_HARD("pclose");
+
+    sprite_free(out_sprite);
+}
+
+void run_play_loop(FILE *ffmpeg,
+                   struct sprite *out_sprite,
+                   size_t num_to_read,
+                   struct rate_keeper *rk)
+{
     for (;;) {
         size_t num_read_tot = 0;
 
@@ -50,7 +71,7 @@ void movie_play(const char *path, struct rate_keeper *rk)
 
             if (nr == 0) {
                 if (feof(ffmpeg))
-                    goto CLEANUP_AND_RETURN;
+                    return;
                 else
                     DIE_HARD("fread");
             }
@@ -75,13 +96,4 @@ void movie_play(const char *path, struct rate_keeper *rk)
 
         rate_keeper_tick(rk);
     }
-
-CLEANUP_AND_RETURN:
-    ;
-
-    int ffmpeg_ret = pclose(ffmpeg);
-    if (ffmpeg_ret != 0)
-        DIE_HARD("pclose");
-
-    sprite_free(out_sprite);
 }

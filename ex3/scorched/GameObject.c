@@ -19,8 +19,8 @@ void GameObject_init(GameObject *this)
     this->get_sprite = NULL;
     this->render = GameObject_render;
 
-    this->_xpos = 0;
-    this->_ypos = 0;
+    this->m_xpos = 0;
+    this->m_ypos = 0;
 }
 
 static void GameObject_render(GameObject *this)
@@ -32,5 +32,5 @@ static void GameObject_render(GameObject *this)
     if (s == NULL)
         return;
 
-    screen_draw_sprite(this->_xpos, this->_ypos, s);
+    screen_draw_sprite(this->m_xpos, this->m_ypos, s);
 }

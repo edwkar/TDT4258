@@ -1,32 +1,32 @@
-#ifndef __GAME_OBJECT_H
-#define __GAME_OBJECT_H
+#ifndef mGAME_OBJECT_H
+#define mGAME_OBJECT_H
 
 #include <stdint.h>
 
 #include "sprite.h"
 
 
-typedef struct _GameObject {
-    void (*destruct)(struct _GameObject *this);
+typedef struct m_GameObject {
+    void (*destruct)(struct m_GameObject *this);
 
-    void (*reset)(struct _GameObject *this);
+    void (*reset)(struct m_GameObject *this);
 
-    void (*update)(struct _GameObject *this);
-    void (*apply_impact)(struct _GameObject *this, int32_t x, int32_t y);
+    void (*update)(struct m_GameObject *this);
+    void (*apply_impact)(struct m_GameObject *this, int32_t x, int32_t y);
 
-    void (*render)(struct _GameObject *this);
+    void (*render)(struct m_GameObject *this);
 
-    struct sprite * (*get_sprite)(struct _GameObject *this);
+    struct sprite * (*get_sprite)(struct m_GameObject *this);
 
-    int32_t _xpos;
-    int32_t _ypos;
+    int32_t m_xpos;
+    int32_t m_ypos;
 } GameObject;
 
 void GameObject_init(GameObject *this);
 
 #define FOR_EACH_GAME_OBJECT(XS, METH_NAME, ...) \
-    for (int __i = 0, __n = sizeof XS / sizeof XS[0]; __i < __n; ++__i) \
-        if (XS[__i] && XS[__i]->METH_NAME != NULL) \
-            XS[__i]->METH_NAME(XS[__i], ##__VA_ARGS__);
+    for (int mi = 0, mn = sizeof XS / sizeof XS[0]; mi < mn; ++mi) \
+        if (XS[mi] && XS[mi]->METH_NAME != NULL) \
+            XS[mi]->METH_NAME(XS[mi], ##__VA_ARGS__);
 
 #endif

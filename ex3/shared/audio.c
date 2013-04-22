@@ -20,68 +20,97 @@
 
 #define AUDIO_BUF_SIZE   16384
 
-static pthread_t audio_thread;
-static uint8_t audio_buf[AUDIO_BUF_SIZE];
-static volatile bool should_shutdown = false;
+static void open_dsp_or_die(void);
+static void set_dsp_options(void);
+static void *audio_run(void *path);
+static void audio_stop_cur(void);
 
-static void *audio_run(void *);
-static int open_dsp_or_die(void);
-static void set_dsp_options(int dsp_fd);
+static pthread_t play_thread;
+static uint8_t audio_buf[AUDIO_BUF_SIZE];
+
+static volatile bool has_played = false;
+static volatile bool should_stop = false;
+
+static int dsp_fd = -1;
 
 void audio_init(void)
 {
-    if (pthread_create(&audio_thread, NULL, audio_run, NULL) != 0)
-        DIE_HARD("pthread_create");
+    open_dsp_or_die();
+    set_dsp_options();
 }
 
 void audio_cleanup(void)
 {
-    should_shutdown = true;
+    assert(dsp_fd != -1);
 
-    void *retval;
-    if (pthread_join(audio_thread, &retval) != 0)
-        DIE_HARD("pthread_join");
+    audio_stop_cur();
+
+    if (close(dsp_fd) != 0)
+        perror("close(dsp_fd)");
+    dsp_fd = -1;
 }
 
-static void *audio_run(__attribute__((unused)) void *___)
+void audio_play(const char *filepath)
 {
-    int dsp_fd = open_dsp_or_die();
+    assert(dsp_fd != -1);
 
-    set_dsp_options(dsp_fd);
+    if (has_played)
+        pthread_cancel(play_thread);
+        //audio_stop_cur();
+    has_played = true;
 
-    int audio_fd = open_or_die("./shared/arve_demotest1.mp3.raw", O_RDONLY);
+    if (pthread_create(&play_thread, NULL, audio_run, (void*) filepath) != 0)
+        DIE_HARD("pthread_create");
+}
 
-    while (!should_shutdown) {
+static void audio_stop_cur(void)
+{
+    should_stop = true;
+
+    void *retval;
+    if (pthread_join(play_thread, &retval) != 0)
+        DIE_HARD("pthread_join");
+
+    should_stop = false;
+}
+
+static void *audio_run(void *path)
+{
+    int audio_fd = open_or_die(path, O_RDONLY);
+
+    while (!should_stop) {
         ssize_t num_read = read(audio_fd, audio_buf,
-                                sizeof audio_buf);
-        if (num_read == 0)
-            break;
-
+                                    sizeof audio_buf);
         if (num_read < 0)
             DIE_HARD("read");
 
+        if (num_read == 0)
+            break;
+
         ssize_t num_written = 0;
-        while (!should_shutdown && num_written < num_read) {
+        while (!should_stop && num_written < num_read) {
             ssize_t num_wr = write(dsp_fd, audio_buf+num_written,
-                                   (size_t) (num_read-num_written));
+                                       (size_t) (num_read-num_written));
+            fprintf(stderr, "wrote %s\n", (char*)path);
             if (num_wr < 0)
                 DIE_HARD("write");
             num_written += num_wr;
         }
     }
 
-    if (close(dsp_fd)   != 0) perror("close(dsp_fd)");
-    if (close(audio_fd) != 0) perror("close(audio_fd)");
+    if (close(audio_fd) != 0)
+        perror("close(audio_fd)");
 
+    puts("closing audio");
     pthread_exit(NULL);
 }
 
-static int open_dsp_or_die(void)
+static void open_dsp_or_die(void)
 {
     for (int num_attempts = 0; num_attempts < 5; ++num_attempts) {
-        int dsp_fd = open(DSP_PATH, O_WRONLY);
+        dsp_fd = open(DSP_PATH, O_WRONLY);
         if (dsp_fd >= 0)
-            return dsp_fd;
+            return;
         else
             sleep(1);
     }
@@ -89,7 +118,7 @@ static int open_dsp_or_die(void)
     DIE_HARD("open");
 }
 
-static void set_dsp_options(int dsp_fd)
+static void set_dsp_options(void)
 {
 #ifdef HOST_BUILD
     if (dsp_fd != -42) // Silence the compiler...

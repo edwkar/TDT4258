@@ -1,5 +1,5 @@
-#ifndef __RATE_KEEPER_H
-#define __RATE_KEEPER_H
+#ifndef RATE_KEEPER_H
+#define RATE_KEEPER_H
 
 #include <stdint.h>
 

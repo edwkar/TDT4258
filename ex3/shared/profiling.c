@@ -6,12 +6,12 @@
 
 #define MAX_PROFILING_POINTS 256
 
-static const struct _profiling_data *profiling_points[MAX_PROFILING_POINTS];
+static const struct m_profiling_data *profiling_points[MAX_PROFILING_POINTS];
 static uint32_t num_profiling_points = 0;
 
 static pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 
-void _profiling_register(struct _profiling_data *pd)
+void m_profiling_register(struct m_profiling_data *pd)
 {
     assert(pthread_mutex_lock(&mut) == 0);
 

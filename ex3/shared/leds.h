@@ -1,5 +1,5 @@
-#ifndef __LEDS_H
-#define __LEDS_H
+#ifndef LEDS_H
+#define LEDS_H
 
 void meh(void);
 
