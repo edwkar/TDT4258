@@ -18,14 +18,14 @@ static void assert_valid_track_num(const struct controller *c, uint32_t n)
 
 /* struct controller object pool.
  */
-static struct controller __object_pool[CONTROLLER_OBJECT_POOL_SIZE];
-static int __pool_num_created = 0;
+static struct controller object_pool[CONTROLLER_OBJECT_POOL_SIZE];
+static int pool_num_created = 0;
 
 struct controller *controller_construct(void)
 {
-    assert(__pool_num_created < CONTROLLER_OBJECT_POOL_SIZE);
+    assert(pool_num_created < CONTROLLER_OBJECT_POOL_SIZE);
 
-    struct controller *c = &__object_pool[__pool_num_created++];
+    struct controller *c = &object_pool[pool_num_created++];
     c->num_tracks = 0;
     c->active_tracks = 0;
     c->looping_tracks = 0;

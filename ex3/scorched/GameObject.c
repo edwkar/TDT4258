@@ -12,6 +12,8 @@ static void GameObject_render(GameObject *);
 
 void GameObject_init(GameObject *this)
 {
+    /* Initialize vtable.
+     */
     this->destruct = NULL;
     this->apply_impact = NULL;
     this->update = NULL;
@@ -19,6 +21,8 @@ void GameObject_init(GameObject *this)
     this->get_sprite = NULL;
     this->render = GameObject_render;
 
+    /* Initialize common properties.
+     */
     this->m_xpos = 0;
     this->m_ypos = 0;
 }

@@ -1,5 +1,5 @@
-#ifndef __CONTROLLER_H
-#define __CONTROLLER_H 
+#ifndef CONTROLLER_H
+#define CONTROLLER_H 
 
 #include <stdbool.h>
 #include "synthesizer.h"

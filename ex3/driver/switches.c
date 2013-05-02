@@ -19,8 +19,13 @@ static volatile int v;
 unsigned char switches_read(void)
 {
     unsigned char res = ~switches_pio->pdsr;
+
+    /* Debounce.
+     */
     for (v = 0; v < 1000; ++v)
         ;
+
     res &= ~switches_pio->pdsr;
+
     return res;
 }

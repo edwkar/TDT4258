@@ -80,11 +80,11 @@ void Tank_init(Tank *this, const Terrain *terrain, int32_t start_x,
     this->m_input = TANK_INPUT_ALL_OFF;
 
     if (is_left) {
-        this->m_turret_MIN_inc = 0;
-        this->m_turret_MAX_inc = 90;
+        this->m_turret_min_inc = 0;
+        this->m_turret_max_inc = 90;
     } else {
-        this->m_turret_MIN_inc = 90;
-        this->m_turret_MAX_inc = 180;
+        this->m_turret_min_inc = 90;
+        this->m_turret_max_inc = 180;
     }
 
     thisgo->reset(thisgo);
@@ -110,8 +110,8 @@ static void Tank_reset(GameObject* thisgo)
     thisgo->m_xpos = this->_start_x;
     thisgo->m_ypos = this->_terrain->height_at(this->_terrain, this->_start_x);
 
-    this->m_turret_inclination = (this->m_turret_MAX_inc +
-                                 this->m_turret_MIN_inc) / 2;
+    this->m_turret_inclination = (this->m_turret_max_inc +
+                                 this->m_turret_min_inc) / 2;
     this->m_turret_charge = 0;
     this->m_health = TANK_START_HEALTH;
     this->m_health_to_lose = 0;
@@ -160,6 +160,8 @@ static void Tank_update(GameObject *thisgo)
 {
     Tank *this = (Tank*) thisgo;
 
+    /* Update health.
+     */
     if (this->m_health_to_lose != 0) {
         this->m_health -= MIN(HEALTH_LOSS_FRAME, this->m_health_to_lose);
         this->m_health = MAX(0, this->m_health);
@@ -168,28 +170,37 @@ static void Tank_update(GameObject *thisgo)
                                     this->m_health_to_lose - HEALTH_LOSS_FRAME);
     }
 
-    if (this->m_input.move_left)
-        thisgo->m_xpos -= VX_FRAME;
-    if (this->m_input.move_right)
-        thisgo->m_xpos += VX_FRAME;
-
+    /* Update turret inclination.
+     */
     if (this->m_input.turret_left)
         this->m_turret_inclination -= VTURRET_FRAME;
     if (this->m_input.turret_right)
         this->m_turret_inclination += VTURRET_FRAME;
 
+    /* Update position.
+     */
+    if (this->m_input.move_left)
+        thisgo->m_xpos -= VX_FRAME;
+    if (this->m_input.move_right)
+        thisgo->m_xpos += VX_FRAME;
     thisgo->m_xpos = CLAMP(MIN_XPOS, thisgo->m_xpos, MAX_XPOS);
 
-    int32_t term_height_at = this->_terrain->height_at(this->_terrain,
+    int32_t ter_height_at = this->_terrain->height_at(this->_terrain,
                                                        thisgo->m_xpos);
-    thisgo->m_ypos = MAX(term_height_at + BODY_YSHIFT,
+    thisgo->m_ypos = MAX(ter_height_at + BODY_YSHIFT,
                         thisgo->m_ypos - VY_FRAME);
 
-    this->m_turret_inclination = CLAMP(this->m_turret_MIN_inc,
+    this->m_turret_inclination = CLAMP(this->m_turret_min_inc,
                                       this->m_turret_inclination,
-                                      this->m_turret_MAX_inc);
+                                      this->m_turret_max_inc);
 
-    this->m_has_released = this->m_turret_charge != 0 && !this->m_input.turret_charge;
+    /* Have we released the trigger?
+     */
+    this->m_has_released = this->m_turret_charge != 0 &&
+                           !this->m_input.turret_charge;
+
+    /* Update charge.
+     */
     if (this->m_input.turret_charge)
         this->m_turret_charge = MIN(this->m_turret_charge + VCHARGE_FRAME,
                                    TURRET_MAX_CHARGE);
@@ -226,10 +237,13 @@ static void Tank_clear_release(Tank *this)
 }
 
 
-/* RENDERING
+/* ~~~~~~~~~~~~~~~~~~~~~ RENDERING ~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * ~~~~~~~~~~~~~~~~~~~~~ RENDERING ~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * ~~~~~~~~~~~~~~~~~~~~~ RENDERING ~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
+
 static void Tank_render_body_and_turret(GameObject *thisgo);
-static void Tank_renderm_health_indicator(GameObject *thisgo);
+static void Tank_render_health_indicator(GameObject *thisgo);
 static void Tank_render_charge_indicator(GameObject *thisgo);
 
 static void Tank_render(GameObject *thisgo)
@@ -237,7 +251,7 @@ static void Tank_render(GameObject *thisgo)
     Tank *this = (Tank*) thisgo;
 
     Tank_render_body_and_turret(thisgo);
-    Tank_renderm_health_indicator(thisgo);
+    Tank_render_health_indicator(thisgo);
 
     if (this->m_turret_charge)
         Tank_render_charge_indicator(thisgo);
@@ -283,7 +297,7 @@ static void Tank_render_indicator(GameObject *,
                                   int32_t,
                                   uint32_t);
 
-static void Tank_renderm_health_indicator(GameObject *thisgo)
+static void Tank_render_health_indicator(GameObject *thisgo)
 {
     Tank *this = (Tank*) thisgo;
 

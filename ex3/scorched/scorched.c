@@ -8,6 +8,7 @@
 #include "ratekeeper.h"
 #include "scorched.h"
 #include "screen.h"
+#include "leds.h"
 #include "utils.h"
 
 #include "Projectile.h"
@@ -21,7 +22,7 @@
 #define LEFT_TANK_START_X              40
 #define RIGHT_TANK_START_X             (WORLD_WIDTH - 40 - 40)
 
-#define START_NUM_LIVES                2
+#define START_NUM_LIVES                3
 
 
 static struct rate_keeper rk;
@@ -51,19 +52,18 @@ struct state {
 };
 #define SF(X) ((struct state){ X })
 
-struct state state_init(uint32_t);
-struct state state_prepare_round(uint32_t);
-struct state state_player_act(uint32_t);
-struct state state_projectile_move(uint32_t);
-struct state state_projectile_explode(uint32_t);
-struct state state_report_score(uint32_t);
-struct state state_quit(uint32_t);
-struct state state_report_winner(uint32_t);
+static struct state state_init(uint32_t);
+static struct state state_prepare_round(uint32_t);
+static struct state state_player_act(uint32_t);
+static struct state state_projectile_move(uint32_t);
+static struct state state_projectile_explode(uint32_t);
+static struct state state_report_score(uint32_t);
+static struct state state_report_winner(uint32_t);
+static struct state state_quit(uint32_t);
 
 
-struct state state_init(uint32_t __attribute__((unused)) time_in_state)
+static struct state state_init(uint32_t __attribute__((unused)) time_in_state)
 {
-
     /* Initialize the game objects.
      */
     assert(num_game_objs == 0);
@@ -106,7 +106,7 @@ struct state state_init(uint32_t __attribute__((unused)) time_in_state)
     return SF(state_prepare_round);
 }
 
-struct state state_prepare_round(uint32_t time_in_state)
+static struct state state_prepare_round(uint32_t time_in_state)
 {
     /* Darken the screen, so that we'll fade in.
      * and, let's wait here for a while.
@@ -121,7 +121,7 @@ struct state state_prepare_round(uint32_t time_in_state)
     }
 }
 
-struct state state_player_act(uint32_t time_in_state)
+static struct state state_player_act(uint32_t time_in_state)
 {
     Tank *t = left_tank_is_active ? left_tank : right_tank;
     if (time_in_state == 0) {
@@ -134,6 +134,8 @@ struct state state_player_act(uint32_t time_in_state)
     int32_t x, y;
     uint32_t charge, angle;
 
+    /* Launch the projectile?
+     */
     if (t->has_released(t, &x, &y, &charge, &angle)) {
         audio_play(SC_RESOURCES_PATH "/audio/fire.raw");
 
@@ -144,12 +146,14 @@ struct state state_player_act(uint32_t time_in_state)
 
         return SF(state_projectile_move);
     } else {
+        /* Nope...
+         */
         TankInput input = {
-            .move_left     = input_key_is_down(input_0),
-            .turret_left   = input_key_is_down(input_2),
-            .turret_right  = input_key_is_down(input_1),
-            .move_right    = input_key_is_down(input_3),
-            .turret_charge = input_key_is_down(input_4)
+            .move_left     = input_key_is_down(input_7),
+            .turret_left   = input_key_is_down(input_6),
+            .turret_right  = input_key_is_down(input_5),
+            .move_right    = input_key_is_down(input_4),
+            .turret_charge = input_key_is_down(input_3)
         };
         t->set_input(t, input);
 
@@ -157,34 +161,45 @@ struct state state_player_act(uint32_t time_in_state)
     }
 }
 
-struct state state_projectile_move(uint32_t time_in_state)
+static struct state state_projectile_move(uint32_t time_in_state)
 {
     assert(time_in_state < 300); // Sanity check.
 
-    if (time_in_state == 0)
-        printf("The projectile is airborne!\n");
+    unsigned int leds_shift = left_tank_is_active ? 8 - time_in_state % 8
+                                                  :     time_in_state % 8;
+    leds_set((uint8_t) (1U << leds_shift));
 
     int32_t landing_pos[2];
-
     if (projectile->has_landed(projectile, landing_pos)) {
+        /* Projectile has landed!
+         * Move on to explosion...
+         */
         projectile->reset(projectile);
 
         FOR_EACH_GAME_OBJECT(GAME_OBJS, apply_impact,
                              landing_pos[0], landing_pos[1]);
 
+        leds_set(0);
         return SF(state_projectile_explode);
-    } else
+    } else {
+        /* Projectile still airborne.
+         */
         return SF(state_projectile_move);
+    }
 }
 
 static uint32_t explode_leave_time = 0;
-struct state state_projectile_explode(uint32_t time_in_state)
+static struct state state_projectile_explode(uint32_t time_in_state)
 {
     if (time_in_state == 0) {
         screen_set_shaking(true);
         explode_leave_time = 0x424242;
         audio_play(SC_RESOURCES_PATH "/audio/explode.raw");
     }
+
+    /* Blink LEDs.
+     */
+    leds_set(time_in_state%2 == 0 ? 255 : 0);
 
     bool all_updates_done = !(
             left_tank->is_updating_from_impact(left_tank) ||
@@ -197,6 +212,12 @@ struct state state_projectile_explode(uint32_t time_in_state)
         return SF(state_projectile_explode);
 
     screen_set_shaking(false);
+    leds_set(0);
+
+
+    /* All updates are done, and we have waited a short while,
+     * no let's look at the scores...
+     */
 
     bool left_survives = left_tank->get_health(left_tank) != 0;
     bool right_survives = right_tank->get_health(right_tank) != 0;
@@ -216,7 +237,7 @@ struct state state_projectile_explode(uint32_t time_in_state)
     }
 }
 
-struct state state_report_score(uint32_t time_in_state)
+static struct state state_report_score(uint32_t time_in_state)
 {
     if (time_in_state == 100)
         return SF(state_prepare_round);
@@ -240,7 +261,7 @@ struct state state_report_score(uint32_t time_in_state)
     return SF(state_report_score);
 }
 
-struct state state_report_winner(uint32_t time_in_state)
+static struct state state_report_winner(uint32_t time_in_state)
 {
     if (time_in_state == 100)
         return SF(state_quit);
@@ -263,16 +284,16 @@ struct state state_report_winner(uint32_t time_in_state)
     return SF(state_report_winner);
 }
 
-struct state state_quit(uint32_t __attribute__((unused)) time_in_state)
+static struct state state_quit(uint32_t __attribute__((unused)) time_in_state)
 {
     return SF(NULL /* I should never be dereferenced. */);
 }
 
+/* Hereth followeth the main game loop.
+ */
 PROFILING_SETUP(main_update);
 PROFILING_SETUP(main_render);
 
-/* Hereth followeth the main game loop.
- */
 void scorched_run(void)
 {
     struct state cur_state = { state_init };
@@ -281,26 +302,36 @@ void scorched_run(void)
     for (;;) {
         struct state next_state = cur_state.act(time_in_state++);
 
+        /* Update.
+         */
         PROFILING_ENTER(main_update);
         FOR_EACH_GAME_OBJECT(GAME_OBJS, update);
         PROFILING_EXIT(main_update);
 
+        /* Render.
+         */
         PROFILING_ENTER(main_render);
         FOR_EACH_GAME_OBJECT(GAME_OBJS, render);
         PROFILING_EXIT(main_render);
 
+        /* Tick, and sleep if we can.
+         */
         rate_keeper_tick(&rk);
 
+        /* Redraw.
+         */
         screen_redraw();
         screen_increment_opacity(15);
 
+        /* Change states?
+         */
         bool is_new_state = next_state.act != cur_state.act;
         if (is_new_state) {
             time_in_state = 0;
             cur_state = next_state;
         }
 
-        if (next_state.act == state_quit || input_key_is_down(input_6))
+        if (next_state.act == state_quit)
             break;
     }
 

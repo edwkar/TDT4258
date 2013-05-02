@@ -1,5 +1,5 @@
-#ifndef __SWITCHES_H
-#define __SWITCHES_H
+#ifndef SWITCHES_H
+#define SWITCHES_H
 
 #define SWITCHES_CNT                8
 #define SWITCH_FROM_LEFT(i)         (1U << (SWITCHES_CNT-1-(i)))

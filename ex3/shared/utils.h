@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 #include <time.h>
 
@@ -17,6 +18,7 @@
 #define MAX(a, b)      ((a)>(b) ? (a) : (b))
 #define MIN(a, b)      ((a)<(b) ? (a) : (b))
 #define CLAMP(a, x, b) ((x) > (b) ? (b) : (x) < (a) ? (a) : (x))
+#define STREQ(x, y)    (strcmp(x, y) == 0)
 
 #define ALWAYS_INLINE inline __attribute__((always_inline))
 

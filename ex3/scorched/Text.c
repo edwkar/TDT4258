@@ -135,6 +135,11 @@ static void Text_update(GameObject *thisgo)
 
         const struct m_TextEntry *entry = &this->m_entries[i];
 
+        /* XXX XXX XXX
+         *
+         * This code is FAR too complex, and must be
+         * refactored when time allows!
+         */
         int32_t outm_x_start = entry->x;
         for (
             size_t j = 0, n = strlen(entry->msg);
@@ -174,18 +179,20 @@ static void Text_update(GameObject *thisgo)
         }
     }
 
-    uint32_t MINm_y_needed = TEXT_BUF_HEIGHT;
-    uint32_t MAXm_y_needed = 0;
+    /* Set limits, for optimised rendering.
+     */
+    uint32_t min_y_needed = TEXT_BUF_HEIGHT;
+    uint32_t max_y_needed = 0;
     for (uint32_t x = 0; x < TEXT_BUF_WIDTH; ++x)
         for (uint32_t y = 0; y < TEXT_BUF_HEIGHT; ++y) {
             struct pixel p = sprite_get_pixel(this->_out_sprite, x, y);
             if (!IS_TRANSPARENT(&p)) {
-                MINm_y_needed = MIN(y, MINm_y_needed);
-                MAXm_y_needed = MAX(y+1, MAXm_y_needed);
+                min_y_needed = MIN(y, min_y_needed);
+                max_y_needed = MAX(y+1, max_y_needed);
             }
         }
-    this->_out_sprite->m_y_draw_start = MINm_y_needed;
-    this->_out_sprite->m_y_draw_end = MAXm_y_needed;
+    this->_out_sprite->m_y_draw_start = min_y_needed;
+    this->_out_sprite->m_y_draw_end = max_y_needed;
 
     this->m_need_update = false;
 }
@@ -206,6 +213,11 @@ static void Text_render(GameObject *thisgo)
     PROFILING_EXIT(Text_render);
 }
 
+/* XXX XXX XXX
+ *
+ * This code is FAR too stupid, and must be
+ * refactored when time allows!
+ */
 static bool Text_font_pos(char c, uint32_t *m_x, uint32_t *m_y)
 {
     int32_t x, y;

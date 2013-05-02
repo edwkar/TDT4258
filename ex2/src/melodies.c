@@ -4,7 +4,7 @@
 #include "utils.h"
 
 static const struct melody MELODIES[] = {
-    #include "melodies__rendered.c"
+    #include "melodiesrendered.c"
 };
 
 const struct melody *melodies_get(const char *name)

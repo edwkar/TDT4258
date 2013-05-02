@@ -1,5 +1,5 @@
-#ifndef __UTILS_H
-#define __UTILS_H
+#ifndef UTILS_H
+#define UTILS_H
 
 #include <assert.h>
 #include <stdbool.h>
@@ -8,7 +8,7 @@
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
-#define ALWAYS_INLINE(fn) inline fn __attribute__((always_inline)) 
+#define ALWAYS_INLINE(fn) inline fn attribute((always_inline)) 
 #define MEMORY_BARRIER asm volatile ("" : : : "memory")
 
 #define PANIC(msg) do {\

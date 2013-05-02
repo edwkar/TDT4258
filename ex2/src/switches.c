@@ -14,7 +14,7 @@
 #define SWITCHES_INT_LEVEL 0
 #define SWITCHES_ALL       ((1<<SWITCHES_CNT)-1)
 
-static bool __module_is_inited = false;
+static bool module_is_inited = false;
 
 static volatile avr32_pio_t *sw_pio = &SWITCHES_PIO;
 static switch_act_listener listener = NULL;
@@ -23,7 +23,7 @@ static void switches_handle_interrupt(void);
 
 void switches_init(void)
 {
-    assert(!__module_is_inited);
+    assert(!module_is_inited);
 
     sw_pio = &SWITCHES_PIO;
 
@@ -41,12 +41,12 @@ void switches_init(void)
     sw_pio->puer = SWITCHES_ALL;  // Pull up enable register.
     sw_pio->ier = SWITCHES_ALL;   // Interrupt enable register.
 
-    __module_is_inited = true;
+    module_is_inited = true;
 }
 
 static void switches_handle_interrupt(void)
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
 
     /* We *must* guarantee that the ISR is read.
      * We use a "fake check" to ensure that the compiler

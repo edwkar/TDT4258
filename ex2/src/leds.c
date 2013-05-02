@@ -14,13 +14,13 @@
 #define LEDS_PIO             AVR32_PIOC
 #define LEDS_ALL             ((1<<LEDS_CNT)-1)
 
-static bool __module_is_inited = false;
+static bool module_is_inited = false;
 
 static volatile avr32_pio_t *leds_pio = &LEDS_PIO;
 
 void leds_init(void)
 {
-    assert(!__module_is_inited);
+    assert(!module_is_inited);
 
     leds_pio = &LEDS_PIO;
 
@@ -29,7 +29,7 @@ void leds_init(void)
     leds_pio->per = LEDS_ALL;
     leds_pio->oer = LEDS_ALL;
 
-    __module_is_inited = true;
+    module_is_inited = true;
 
     /* Initially turn all off.
      */
@@ -40,7 +40,7 @@ void leds_init(void)
  */
 void leds_light(uint32_t led)
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
     ASSERT_VALID_LED(led);
 
     leds_pio->sodr |= 1U << led;
@@ -48,7 +48,7 @@ void leds_light(uint32_t led)
 
 void leds_light_all(void)
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
 
     leds_pio->sodr = LEDS_ALL;
 }
@@ -57,7 +57,7 @@ void leds_light_all(void)
  */
 void leds_turn_off(uint32_t led)
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
     ASSERT_VALID_LED(led);
 
     leds_pio->codr = 1U << led;
@@ -65,7 +65,7 @@ void leds_turn_off(uint32_t led)
 
 void leds_turn_off_all(void)
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
 
     leds_pio->codr = LEDS_ALL;
 }
@@ -73,7 +73,7 @@ void leds_turn_off_all(void)
 /* Light LED <led> if <cond> is true.
  */
 void leds_lighted_if(uint32_t led, bool cond) {
-    assert(__module_is_inited);
+    assert(module_is_inited);
 
     if (cond)
         leds_light(led);

@@ -66,6 +66,9 @@ static void *audio_run(void __attribute__((unused)) *___)
     int audio_fd = -1;
 
     for (;;) {
+        /* This is a little convoluted.
+         * We are checking if we should break, or play a different song.
+         */
         SYNCHRONIZED(mut,
             if (should_stop)
                 break;

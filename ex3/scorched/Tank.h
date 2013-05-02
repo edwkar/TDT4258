@@ -43,9 +43,9 @@ typedef struct m_Tank {
     struct sprite *_turret_sprites[TANK_TURRET_MAX_ANG+1];
 
     bool m_has_released;
-    uint32_t m_turret_MIN_inc;
+    uint32_t m_turret_min_inc;
     uint32_t m_turret_inclination;
-    uint32_t m_turret_MAX_inc;
+    uint32_t m_turret_max_inc;
     uint32_t m_turret_charge;
 
     int32_t _start_x;

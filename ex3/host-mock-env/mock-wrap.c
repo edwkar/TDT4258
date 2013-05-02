@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 
     if (system("rm " FRAME_BUFFER_PATH "") != 0)  DIE_HARD("rm");
     if (system("rm " DSP_PATH "") != 0) DIE_HARD("rm");
-    if (system("rm " INPUT_DRIVER_PATH) != 0) DIE_HARD("rm");
+    if (system("rm " INPUT_DEVICE_PATH) != 0) DIE_HARD("rm");
 
     return EXIT_SUCCESS;
 }
@@ -129,13 +129,13 @@ static void *run_mock_input(__attribute__((unused)) void *___) {
         SDLK_a, SDLK_s, SDLK_d, SDLK_f,
         SDLK_g, SDLK_h, SDLK_j, SDLK_k };
 
-    if (system("rm -f " INPUT_DRIVER_PATH) != 0)
+    if (system("rm -f " INPUT_DEVICE_PATH) != 0)
         DIE_HARD("rm");
 
-    int fd = open(INPUT_DRIVER_PATH,
+    int fd = open(INPUT_DEVICE_PATH,
                   O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
     if (fd < 0)
-        DIE_HARD("Failed to open " INPUT_DRIVER_PATH);
+        DIE_HARD("Failed to open " INPUT_DEVICE_PATH);
 
     for (;;) {
         uint8_t *key_state = SDL_GetKeyState(NULL);

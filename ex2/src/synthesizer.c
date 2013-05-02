@@ -27,14 +27,14 @@ struct synthesis {
 };
 
 
-static bool __module_is_inited = false;
+static bool module_is_inited = false;
 
 /* A lookup table mapping note numbers to waveform periods.
  */
 static uint32_t NOTE_PERIODS[SYNTHESIZER_MAX_NOTE+1];
 
 void synthesizer_init(uint32_t sample_rate) {
-    assert(!__module_is_inited);
+    assert(!module_is_inited);
 
     for (int note = 0; note <= SYNTHESIZER_MAX_NOTE ; ++note) {
         // http://www.phy.mtu.edu/~suits/NoteFreqCalcs.html
@@ -42,19 +42,19 @@ void synthesizer_init(uint32_t sample_rate) {
         NOTE_PERIODS[note] = 2 * sample_rate / freq;
     }
 
-    __module_is_inited = true;
+    module_is_inited = true;
 }
 
 /* struct synthesis object pool.
  */
-static struct synthesis __object_pool[SYNTHESIS_OBJECT_POOL_SIZE];
-static int __pool_num_created = 0;
+static struct synthesis object_pool[SYNTHESIS_OBJECT_POOL_SIZE];
+static int pool_num_created = 0;
 
 struct synthesis * synthesis_construct(const struct melody *mel)
 {
-    assert(__pool_num_created < SYNTHESIS_OBJECT_POOL_SIZE);
+    assert(pool_num_created < SYNTHESIS_OBJECT_POOL_SIZE);
 
-    struct synthesis *s = &__object_pool[__pool_num_created++];
+    struct synthesis *s = &object_pool[pool_num_created++];
     s->waveform = WAVEFORM_SQUARE;
     s->mel = mel;
     s->pos = 0;
@@ -80,7 +80,7 @@ uint32_t synthesis_advance(struct synthesis *s,
                            uint32_t tot_to_write,
                            int16_t res[static tot_to_write])
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
 
     const struct melody *mel = s->mel;
     assert(s->pos != mel->len);

@@ -16,5 +16,6 @@ enum input_key {
 
 void input_init(void);
 bool input_key_is_down(enum input_key key);
+void input_cleanup(void);
 
 #endif

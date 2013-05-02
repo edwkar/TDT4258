@@ -13,29 +13,29 @@
 #define ABDAC_PIO           AVR32_PIOB
 #define ABDAC_INT_PRIO      3
 
-static bool __module_is_inited = false;
+static bool module_is_inited = false;
 
 static volatile avr32_abdac_t *dac = &AVR32_ABDAC;
 
 /* Data structures for a basic double buffer.
  */
-static int16_t __buf_a[DAC_BUF_SIZE];
-static int16_t __buf_b[DAC_BUF_SIZE];
+static int16_t buf_a[DAC_BUF_SIZE];
+static int16_t buf_b[DAC_BUF_SIZE];
 
-static volatile int16_t *front = __buf_a;
+static volatile int16_t *front = buf_a;
 static volatile int16_t front_pos = DAC_BUF_SIZE;
-static volatile int16_t *back = __buf_b;
+static volatile int16_t *back = buf_b;
 static volatile int16_t has_back = false;
 
 bool dac_may_write()
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
     return !has_back;
 }
 
 void dac_write_buffer(const int16_t buf[static DAC_BUF_SIZE])
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
     assert(dac_may_write());
 
     memcpy((void *) back, buf, DAC_BUF_SIZE * sizeof(int16_t));
@@ -46,7 +46,7 @@ static void dac_handle_interrupt();
 
 void dac_init(void)
 {
-    assert(!__module_is_inited);
+    assert(!module_is_inited);
 
     /* First, register the ABDAC interrupt handler.
      */
@@ -78,12 +78,12 @@ void dac_init(void)
     dac->CR.en = 1;
     dac->IER.tx_ready = 1;
 
-    __module_is_inited = true;
+    module_is_inited = true;
 }
 
 static void dac_handle_interrupt(void)
 {
-    assert(__module_is_inited);
+    assert(module_is_inited);
 
     int16_t v = front_pos != DAC_BUF_SIZE ? front[front_pos++] : 0;
     dac->SDR.channel0 = v;

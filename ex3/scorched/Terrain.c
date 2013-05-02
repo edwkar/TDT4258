@@ -78,6 +78,8 @@ static void Terrain_init_grid(Terrain *this)
 {
     for (uint32_t y = 0, idx = 0; y < this->m_height; ++y)
         for (uint32_t x = 0; x < this->m_width; ++x, ++idx) {
+            /* Just hacked around for a simple formula ;-)
+             */
             uint32_t edge = (uint32_t) MAX(80,
                                            -0.01 * pow((float)x - 140.0, 2)
                                            + 120);
@@ -113,6 +115,8 @@ static int32_t Terrain_height_at(const Terrain *this, int32_t xpos)
     return 0;
 }
 
+/* XXX REFACTOR THIS WHEN TIME ALLOWS.
+ */
 static void Terrain_apply_impact(GameObject *thisgo, int32_t m_x, int32_t m_y)
 {
     Terrain *this = (Terrain*) thisgo;

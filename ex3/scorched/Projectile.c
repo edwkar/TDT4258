@@ -48,6 +48,8 @@ void Projectile_init(Projectile *this, Terrain *terrain)
 
     this->reset(this);
 
+    /* We'll just draw the projectile as a red rectangle.
+     */
     this->_sprite = sprite_construct(PROJ_WIDTH, PROJ_HEIGHT);
     for (uint32_t x = 0; x < PROJ_WIDTH; ++x)
         for (uint32_t y = 0; y < PROJ_HEIGHT; ++y)
@@ -103,23 +105,23 @@ static void Projectile_update(GameObject* thisgo)
     this->m_vx += 0; /* wind? XXX */
     this->m_vy += Y_ACC;
 
-    int32_t term_height =
+    int32_t ter_height =
         this->_terrain->height_at(this->_terrain, (int32_t) this->m_x);
 
-    this->m_y = MAX(this->m_y, term_height);
+    this->m_y = MAX(this->m_y, ter_height);
 }
 
 static bool Projectile_has_landed(const struct m_Projectile *this,
                                   int32_t landing_pos[static 2])
 {
-    int32_t term_height =
+    int32_t ter_height =
         this->_terrain->height_at(this->_terrain, (int32_t) this->m_x);
 
-    if (term_height < this->m_y)
+    if (ter_height < this->m_y)
         return false;
     else {
         landing_pos[0] = (int32_t) this->m_x;
-        landing_pos[1] = term_height;
+        landing_pos[1] = ter_height;
         return true;
     }
 }

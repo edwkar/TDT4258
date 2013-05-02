@@ -47,6 +47,8 @@ struct sprite * sprite_load(const char *path)
     uint32_t data_sz = w * h * 4;
     uint8_t *data = malloc_or_die(data_sz);
 
+    /* Read data.
+     */
     if (fread(data, 1, data_sz, f) != data_sz)
         DIE_HARD("fread");
 
@@ -56,6 +58,8 @@ struct sprite * sprite_load(const char *path)
     if (fclose(f) != 0)
         DIE_HARD("fclose");
 
+    /* Build the sprite struct.
+     */
     struct sprite *s = sprite_construct(w, h);
 
     for (uint32_t x = 0, idx = 0; x < s->m_width; ++x)

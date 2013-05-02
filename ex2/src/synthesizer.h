@@ -1,5 +1,5 @@
-#ifndef __SYNTHESIZER_H
-#define __SYNTHESIZER_H
+#ifndef SYNTHESIZER_H
+#define SYNTHESIZER_H
 
 #include <stdbool.h>
 #include <stdint.h>

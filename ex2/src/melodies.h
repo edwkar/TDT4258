@@ -1,5 +1,5 @@
-#ifndef __MELODIES_H
-#define __MELODIES_H 
+#ifndef MELODIES_H
+#define MELODIES_H 
 
 #include "synthesizer.h"
 
