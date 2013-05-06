@@ -1,0 +1,26 @@
+digraph main_logic {
+    node [shape=point ]; 
+    input;
+
+    node [shape=box, style=filled, color=gray];
+    init_go [label="Initialise game objects."];
+    intro_movie [label="Play introduction movie."];
+    prep_rnd [label="Prepare round."];
+    player_act [label="Control tank."];
+    proj_air [label="Cannonball in air."];
+    proj_expl [label="Cannonball exploding."];
+    rep_score [label="Report score."];
+    rep_winner [label="Report result."];
+    quit [label="Quit."];
+    
+    input -> init_go;
+    init_go -> intro_movie;
+    intro_movie -> prep_rnd;
+    prep_rnd -> player_act;
+    player_act -> proj_air [label = "Cannonball launched"];
+    proj_air -> proj_expl;
+    proj_expl -> rep_score [label = "Both players alive"];
+    rep_score -> prep_rnd;
+    proj_expl -> rep_winner [label = ">=1 player dead"];
+    rep_winner -> quit;
+};

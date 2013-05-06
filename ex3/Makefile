@@ -22,20 +22,23 @@ LDFLAGS = -lm -lpthread -lrt -fuse-linker-plugin
 HOSTCFLAGS = $(CFLAGS) -DHOST_BUILD\
 		       -DDSP_PATH=$(MOCK_DSP_PATH) \
 		       -DFRAME_BUFFER_PATH=$(MOCK_FRAME_BUFFER_PATH)\
-		       -DINPUT_DRIVER_PATH=$(MOCK_INPUT_DRIVER_PATH)\
+		       -DINPUT_DEVICE_PATH=$(MOCK_INPUT_DEVICE_PATH)\
+		       -DLEDS_DEVICE_PATH=$(MOCK_LEDS_DEVICE_PATH)\
 		       -g\
 		       -fcolor-diagnostics\
 		       -Weverything -Wno-padded -Wno-gnu -Wno-disabled-macro-expansion
 MOCK_DSP_PATH = '"/tmp/__scland__mockdsp"'
 MOCK_FRAME_BUFFER_PATH = '"/tmp/__scland__mockfb"'
-MOCK_INPUT_DRIVER_PATH = '"/tmp/__scland__mockinput"'
+MOCK_INPUT_DEVICE_PATH = '"/tmp/__scland__mockinput"'
+MOCK_LEDS_DEVICE_PATH  = '"/dev/null"'
 
 HOSTLDFLAGS = $(LDFLAGS) -g -lSDL 
 
 
 CROSSCFLAGS = $(CFLAGS) -DDSP_PATH='"/dev/dsp"'\
 	                -DFRAME_BUFFER_PATH='"/dev/fb0"'\
-			-DINPUT_DRIVER_PATH='"/dev/stk1000switches"'
+			-DINPUT_DEVICE_PATH='"/dev/stk1000switches"'\
+		        -DLEDS_DEVICE_PATH='"/dev/stk1000leds"'
 
 CROSSLDFLAGS = $(LDFLAGS)
 
